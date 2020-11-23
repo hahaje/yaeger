@@ -16,8 +16,9 @@ class YaegerStageTest {
     private static final int WIDTH = 960;
     private static final int HEIGHT = 600;
 
-    private YaegerApplication yaegerApplication;
+    private YaegerGame yaegerGame;
     private Stage stage;
+    private YaegerConfig yaegerConfig;
     private Injector injector;
     private YaegerStage sut;
     private SceneCollectionFactory sceneCollectionFactory;
@@ -25,19 +26,32 @@ class YaegerStageTest {
 
     @BeforeEach
     void setUp() {
-        yaegerApplication = mock(YaegerApplication.class);
+        yaegerGame = mock(YaegerGame.class);
         stage = mock(Stage.class);
         injector = mock(Injector.class);
+        yaegerConfig = new YaegerConfig();
         sceneCollectionFactory = mock(SceneCollectionFactory.class);
         sceneCollection = mock(SceneCollection.class);
-        sut = new YaegerStage(yaegerApplication, stage);
+
+        sut = new YaegerStage(yaegerGame, stage, yaegerConfig);
         sut.setSceneCollectionFactory(sceneCollectionFactory);
 
-        when(sceneCollectionFactory.create(stage)).thenReturn(sceneCollection);
+        when(sceneCollectionFactory.create(stage, yaegerConfig)).thenReturn(sceneCollection);
     }
 
     @Test
-    void atInitializationsetSizeIsUsed() {
+    void atInitSceneCollectionFactoryCreateIsCalledWithCorrectConfig() {
+        // Arrange
+
+        // Act
+        sut.init(injector);
+
+        // Assert
+        verify(sceneCollectionFactory).create(stage, yaegerConfig);
+    }
+
+    @Test
+    void atInitializationSetSizeIsUsed() {
         // Arrange
         sut.setSize(new Size(WIDTH, HEIGHT));
 
@@ -57,7 +71,7 @@ class YaegerStageTest {
         sut.init(injector);
 
         // Assert
-        verify(yaegerApplication).initializeGame();
+        verify(yaegerGame).setupGame();
     }
 
     @Test
@@ -68,7 +82,7 @@ class YaegerStageTest {
         sut.init(injector);
 
         // Assert
-        verify(yaegerApplication).setupScenes();
+        verify(yaegerGame).setupScenes();
     }
 
     @Test
@@ -79,9 +93,9 @@ class YaegerStageTest {
         sut.init(injector);
 
         // Assert
-        InOrder inOrder = inOrder(yaegerApplication, yaegerApplication);
-        inOrder.verify(yaegerApplication).initializeGame();
-        inOrder.verify(yaegerApplication).setupScenes();
+        InOrder inOrder = inOrder(yaegerGame, yaegerGame);
+        inOrder.verify(yaegerGame).setupGame();
+        inOrder.verify(yaegerGame).setupScenes();
     }
 
     @Test
@@ -114,8 +128,8 @@ class YaegerStageTest {
         sut.init(injector);
 
         // Assert
-        InOrder inOrder = inOrder(yaegerApplication, stage);
-        inOrder.verify(yaegerApplication).initializeGame();
+        InOrder inOrder = inOrder(yaegerGame, stage);
+        inOrder.verify(yaegerGame).setupGame();
         inOrder.verify(stage).setWidth(anyDouble());
         inOrder.verify(stage).setHeight(anyDouble());
     }

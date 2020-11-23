@@ -32,7 +32,7 @@ class MouseExitListenerTest {
         }
 
         @Override
-        public Optional<Node> getGameNode() {
+        public Optional<? extends Node> getNode() {
             return Optional.of(node);
         }
 

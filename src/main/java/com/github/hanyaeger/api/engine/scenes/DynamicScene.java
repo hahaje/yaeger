@@ -25,19 +25,14 @@ public abstract class DynamicScene extends StaticScene implements UpdateDelegato
     private Updater updater;
     private AnimationTimer animator;
     private AnimationTimerFactory animationTimerFactory;
-    private List<Timer> timers = new ArrayList<>();
-    private List<EntitySpawner> spawners = new ArrayList<>();
+    private final List<Timer> timers = new ArrayList<>();
+    private final List<EntitySpawner> spawners = new ArrayList<>();
 
     @Override
     public void activate() {
         super.activate();
         createGameLoop();
         startGameLoop();
-    }
-
-    @Override
-    public void onInputChanged(final Set<KeyCode> input) {
-        entityCollection.notifyGameObjectsOfPressedKeys(input);
     }
 
     @Override
@@ -65,6 +60,11 @@ public abstract class DynamicScene extends StaticScene implements UpdateDelegato
         return timestamp -> {
             entityCollection.update(timestamp);
         };
+    }
+
+    @Override
+    public final void update(final long timestamp) {
+        getUpdater().update(timestamp);
     }
 
     private void createGameLoop() {

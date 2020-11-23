@@ -3,55 +3,55 @@ package com.github.hanyaeger.api.engine.entities.entity.collisions;
 import com.github.hanyaeger.api.engine.entities.entity.Removeable;
 import com.github.hanyaeger.api.engine.entities.entity.YaegerEntity;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * A CollisionDelegate handles all behavior related to Object collisions.
+ * A {@link CollisionDelegate} handles all behavior related to Object collisions.
  */
 public class CollisionDelegate {
 
-    private Set<AABBCollided> collideds;
-    private Set<Collider> colliders;
+    private final List<Collided> collideds;
+    private final List<Collider> colliders;
 
     /**
      * Create a new CollisionDelegate.
      */
     public CollisionDelegate() {
-        collideds = new HashSet<>();
-        colliders = new HashSet<>();
+        collideds = new ArrayList<>();
+        colliders = new ArrayList<>();
     }
 
     /**
      * Register an {@link YaegerEntity} to be evaluated for collision detection. The {@link YaegerEntity} will only be added
-     * if
+     * if is an {@link Collider} or {@link Collided}.
      *
      * @param entity the {@link YaegerEntity} that should be registered
      */
-    public void register(YaegerEntity entity) {
+    public void register(final YaegerEntity entity) {
         if (entity instanceof Collider) {
             register((Collider) entity);
         }
-        if (entity instanceof AABBCollided) {
-            register((AABBCollided) entity);
+        if (entity instanceof Collided) {
+            register((Collided) entity);
         }
     }
 
     /**
      * Register a {@link Collider} to be evaluated for collision detection.
      *
-     * @param collider the {@link Collider} that should be registered
+     * @param Collider the {@link Collider} that should be registered
      */
-    public void register(Collider collider) {
-        colliders.add(collider);
+    public void register(final Collider Collider) {
+        colliders.add(Collider);
     }
 
     /**
-     * Register a {@link AABBCollided} to be evaluated for collision detection.
+     * Register a {@link Collided} to be evaluated for collision detection.
      *
-     * @param collided the {@link AABBCollided} that should be registered
+     * @param collided the {@link Collided} that should be registered
      */
-    public void register(AABBCollided collided) {
+    public void register(final Collided collided) {
         collideds.add(collided);
     }
 
@@ -60,27 +60,27 @@ public class CollisionDelegate {
      *
      * @param removeable The {@link Removeable} that should be removed.
      */
-    public void remove(Removeable removeable) {
+    public void remove(final Removeable removeable) {
         if (removeable instanceof Collider) {
             removeCollider((Collider) removeable);
         }
-        if (removeable instanceof AABBCollided) {
-            removeCollided((AABBCollided) removeable);
+        if (removeable instanceof Collided) {
+            removeCollided((Collided) removeable);
         }
     }
 
     /**
-     * Check for collisions. Each {@link AABBCollided} is asked to check for collisions.
+     * Check for collisions. Each {@link Collided} is asked to check for collisions.
      */
     public void checkCollisions() {
         collideds.forEach(collided -> collided.checkForCollisions(colliders));
     }
 
-    private void removeCollider(Collider collider) {
-        colliders.remove(collider);
+    private void removeCollider(final Collider Collider) {
+        colliders.remove(Collider);
     }
 
-    private void removeCollided(AABBCollided collided) {
+    private void removeCollided(final Collided collided) {
         collideds.remove(collided);
     }
 }

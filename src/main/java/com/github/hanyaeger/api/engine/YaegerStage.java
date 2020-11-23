@@ -1,29 +1,31 @@
 package com.github.hanyaeger.api.engine;
 
+import com.github.hanyaeger.api.engine.scenes.SceneCollection;
 import com.github.hanyaeger.api.guice.factories.SceneCollectionFactory;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import javafx.stage.Stage;
-import com.github.hanyaeger.api.engine.scenes.SceneCollection;
 import com.github.hanyaeger.api.engine.scenes.YaegerScene;
 
 /**
  * A {@link YaegerStage} encapsulates an JavaFX {@link Stage}. It defines the window
  * that is being used and contains the {@link SceneCollection} that contains all instances
- * of {@link YaegerScene} that are part of the {@link YaegerApplication}.
+ * of {@link YaegerScene} that are part of the {@link YaegerGame}.
  */
 public class YaegerStage implements Initializable {
 
-    private Size size = YaegerApplication.DEFAULT_GAME_DIMENSIONS;
+    private Size size = YaegerGame.DEFAULT_GAME_DIMENSIONS;
 
-    private YaegerApplication yaegerApplication;
-    private Stage stage;
+    private final YaegerGame yaegerGame;
+    private final Stage stage;
+    private final YaegerConfig yaegerConfig;
     private SceneCollectionFactory sceneCollectionFactory;
     private SceneCollection sceneCollection;
 
-    YaegerStage(final YaegerApplication yaegerApplication, final Stage stage) {
-        this.yaegerApplication = yaegerApplication;
+    YaegerStage(final YaegerGame yaegerGame, final Stage stage, final YaegerConfig yaegerConfig) {
+        this.yaegerGame = yaegerGame;
         this.stage = stage;
+        this.yaegerConfig = yaegerConfig;
     }
 
     /**
@@ -38,15 +40,16 @@ public class YaegerStage implements Initializable {
     @Override
     public void init(final Injector injector) {
         stage.setResizable(false);
-        sceneCollection = sceneCollectionFactory.create(stage);
+        sceneCollection = sceneCollectionFactory.create(stage, yaegerConfig);
         injector.injectMembers(sceneCollection);
         sceneCollection.init(injector);
 
-        yaegerApplication.initializeGame();
+
+        yaegerGame.setupGame();
         stage.setWidth(size.getWidth());
         stage.setHeight(size.getHeight());
 
-        yaegerApplication.setupScenes();
+        yaegerGame.setupScenes();
         sceneCollection.postSetupScenes();
 
         stage.show();
@@ -71,21 +74,21 @@ public class YaegerStage implements Initializable {
     /**
      * Add a {@link YaegerScene} to the {@link YaegerStage}.
      *
-     * @param number The number as an {@code int} that identifies the {@link YaegerScene}. By calling the method
-     *               {@link #setActiveScene(int)} the added {@link YaegerScene} can be set as the active one.
-     * @param scene  The {@link YaegerScene} that should be added.
+     * @param id    The number as an {@code int} that identifies the {@link YaegerScene}. By calling the method
+     *              {@link #setActiveScene(int)} the added {@link YaegerScene} can be set as the active one.
+     * @param scene The {@link YaegerScene} that should be added.
      */
-    protected void addScene(final int number, final YaegerScene scene) {
-        sceneCollection.addScene(number, scene);
+    protected void addScene(final int id, final YaegerScene scene) {
+        sceneCollection.addScene(id, scene);
     }
 
     /**
      * Set the current active {@link YaegerScene}.
      *
-     * @param number The {@link Integer} identifying the {@link YaegerScene}
+     * @param id The {@link Integer} identifying the {@link YaegerScene}
      */
-    protected void setActiveScene(final int number) {
-        sceneCollection.setActive(number);
+    protected void setActiveScene(final int id) {
+        sceneCollection.setActive(id);
     }
 
     @Inject

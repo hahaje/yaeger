@@ -3,14 +3,13 @@ package com.github.hanyaeger.api.engine.entities.entity.shape.text;
 import com.github.hanyaeger.api.engine.Updatable;
 import com.github.hanyaeger.api.engine.UpdateDelegator;
 import com.github.hanyaeger.api.engine.Updater;
+import com.github.hanyaeger.api.engine.entities.EntityCollection;
 import com.github.hanyaeger.api.engine.entities.entity.ContinuousRotatable;
-import com.github.hanyaeger.api.engine.entities.entity.Location;
-import com.github.hanyaeger.api.engine.entities.entity.motion.BufferedMoveable;
-import com.github.hanyaeger.api.engine.entities.entity.motion.EntityMotionInitBuffer;
+import com.github.hanyaeger.api.engine.entities.entity.Coordinate2D;
+import com.github.hanyaeger.api.engine.entities.entity.motion.*;
+import com.github.hanyaeger.api.guice.factories.MotionApplierFactory;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import com.github.hanyaeger.api.engine.entities.entity.motion.DefaultMotionApplier;
-import com.github.hanyaeger.api.engine.entities.entity.motion.MotionApplier;
 import javafx.geometry.Point2D;
 
 import java.util.Optional;
@@ -21,27 +20,27 @@ import java.util.Optional;
  */
 public abstract class DynamicTextEntity extends TextEntity implements UpdateDelegator, BufferedMoveable, ContinuousRotatable {
 
-    private DefaultMotionApplier motionApplier;
+    private MotionApplier motionApplier;
     private Updater updater;
     private Optional<EntityMotionInitBuffer> buffer;
     private double rotationAngle;
 
     /**
-     * Instantiate a new {@link DynamicTextEntity} for the given {@link Location}.
+     * Instantiate a new {@link DynamicTextEntity} for the given {@link Coordinate2D}.
      *
-     * @param initialPosition the initial {@link Location} of this {@link DynamicTextEntity}
+     * @param initialPosition the initial {@link Coordinate2D} of this {@link DynamicTextEntity}
      */
-    public DynamicTextEntity(final Location initialPosition) {
+    public DynamicTextEntity(final Coordinate2D initialPosition) {
         this(initialPosition, "");
     }
 
     /**
      * Instantiate a new {@link DynamicTextEntity} for the given {@link Point2D} and textDelegate.
      *
-     * @param initialPosition the initial {@link Location} of this {@link DynamicTextEntity}
+     * @param initialPosition the initial {@link Coordinate2D} of this {@link DynamicTextEntity}
      * @param text            a {@link String} containing the initial textDelegate to be displayed
      */
-    public DynamicTextEntity(final Location initialPosition, final String text) {
+    public DynamicTextEntity(final Coordinate2D initialPosition, final String text) {
         super(initialPosition, text);
 
         buffer = Optional.of(new EntityMotionInitBuffer());
@@ -64,6 +63,11 @@ public abstract class DynamicTextEntity extends TextEntity implements UpdateDele
     }
 
     @Override
+    public final void update(final long timestamp) {
+        getUpdater().update(timestamp);
+    }
+
+    @Override
     public void setRotationSpeed(final double rotationAngle) {
         this.rotationAngle = rotationAngle;
     }
@@ -83,10 +87,15 @@ public abstract class DynamicTextEntity extends TextEntity implements UpdateDele
         return buffer;
     }
 
+    @Override
+    public void addToEntityCollection(EntityCollection collection) {
+        collection.addDynamicEntity(this);
+    }
+
     @Inject
     @Override
-    public void setMotionApplier(final DefaultMotionApplier motionApplier) {
-        this.motionApplier = motionApplier;
+    public void injectMotionApplierFactory(final MotionApplierFactory motionApplierFactory) {
+        this.motionApplier = motionApplierFactory.create(getMotionModifierType());
     }
 
     @Inject

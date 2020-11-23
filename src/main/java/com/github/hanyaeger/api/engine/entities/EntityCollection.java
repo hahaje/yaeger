@@ -5,50 +5,50 @@ import com.github.hanyaeger.api.engine.Updatable;
 import com.github.hanyaeger.api.engine.annotations.AnnotationProcessor;
 import com.github.hanyaeger.api.engine.debug.StatisticsObserver;
 import com.github.hanyaeger.api.engine.entities.entity.Removeable;
-import com.github.hanyaeger.api.engine.entities.entity.collisions.AABBCollided;
+import com.github.hanyaeger.api.engine.entities.entity.collisions.Collided;
 import com.github.hanyaeger.api.engine.entities.entity.collisions.Collider;
 import com.github.hanyaeger.api.engine.entities.entity.collisions.CollisionDelegate;
+import com.github.hanyaeger.api.engine.entities.entity.events.userinput.KeyListener;
 import com.github.hanyaeger.api.engine.scenes.YaegerScene;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.github.hanyaeger.api.engine.entities.entity.YaegerEntity;
-import com.github.hanyaeger.api.engine.entities.entity.events.userinput.KeyListener;
 import javafx.scene.Group;
 import javafx.scene.input.KeyCode;
 import com.github.hanyaeger.api.engine.entities.entity.events.EventTypes;
+import javafx.scene.layout.Pane;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 /**
  * An {@link EntityCollection} encapsulates all behaviour related to all instances of {@link YaegerEntity} that are part of
- * a {@link YaegerScene}.
+ * a {@link YaegerScene}. Therefore, an {@link EntityCollection}, is also responsible for creating the Game World update loop.
  */
 public class EntityCollection implements Initializable {
 
     private final EntityCollectionStatistics statistics;
     private Injector injector;
-    private final Group group;
-    private final Set<EntitySupplier> suppliers = new HashSet<>();
-    private final Set<YaegerEntity> statics = new HashSet<>();
-    private final Set<Updatable> updatables = new HashSet<>();
-    private final Set<KeyListener> keyListeners = new HashSet<>();
-    private final Set<Removeable> garbage = new HashSet<>();
+    private final Pane pane;
+    private final List<EntitySupplier> suppliers = new ArrayList<>();
+    private final List<YaegerEntity> statics = new ArrayList<>();
+    private final List<Updatable> updatables = new ArrayList<>();
+    private final List<KeyListener> keyListeners = new ArrayList<>();
+    private final List<Removeable> garbage = new ArrayList<>();
 
     private final List<StatisticsObserver> statisticsObservers = new ArrayList<>();
 
-    private CollisionDelegate collisionDelegate;
+    private final CollisionDelegate collisionDelegate;
     private AnnotationProcessor annotationProcessor;
 
     /**
      * Instantiate an {@link EntityCollection} for a given {@link Group} and a {@link Set} of {@link YaegerEntity} instances.
      *
-     * @param group The {@link Group} to which all instances of {@link YaegerEntity}s should be added.
+     * @param pane The {@link Group} to which all instances of {@link YaegerEntity}s should be added.
      */
-    public EntityCollection(final Group group) {
-        this.group = group;
+    public EntityCollection(final Pane pane) {
+        this.pane = pane;
         this.collisionDelegate = new CollisionDelegate();
         this.statistics = new EntityCollectionStatistics();
     }
@@ -56,7 +56,7 @@ public class EntityCollection implements Initializable {
     /**
      * Add a {@link StatisticsObserver}.
      *
-     * @param observer the {@link StatisticsObserver} to be added
+     * @param observer the {@link StatisticsObserver} to be added.
      */
     public void addStatisticsObserver(final StatisticsObserver observer) {
         statisticsObservers.add(observer);
@@ -72,13 +72,21 @@ public class EntityCollection implements Initializable {
     }
 
     /**
+     * Regist a {@link KeyListener}.
+     *
+     * @param keyListener The {@link KeyListener} to be registered.
+     */
+    public void registerKeyListener(final KeyListener keyListener) {
+        this.keyListeners.add(keyListener);
+    }
+
+    /**
      * Mark an {@link Removeable} as garbage. After this is done, the {@link Removeable} is set for Garbage Collection and will
      * be collected in the next Garbage Collection cycle.
      *
      * @param entity The {@link Removeable} to be removed.
      */
     private void markAsGarbage(final Removeable entity) {
-
         this.garbage.add(entity);
     }
 
@@ -118,8 +126,8 @@ public class EntityCollection implements Initializable {
      * </li>
      * <li>
      * <b>Check for collisions</b> Check if collisions have occured between instances of
-     * {@link AABBCollided} and
-     * {@link Collider}. In such a case, the {@link AABBCollided}
+     * {@link Collided} and
+     * {@link Collider}. In such a case, the {@link Collided}
      * will be notified.
      * </li>
      * <li>
@@ -134,10 +142,11 @@ public class EntityCollection implements Initializable {
      */
     public void update(final long timestamp) {
         collectGarbage();
-        notifyUpdatables(timestamp);
-        addSuppliedEntities();
+
+        updatables.forEach(updatable -> updatable.update(timestamp));
         collisionDelegate.checkCollisions();
 
+        addSuppliedEntities();
         updateStatistics();
         notifyStatisticsObservers();
     }
@@ -178,64 +187,62 @@ public class EntityCollection implements Initializable {
     }
 
     private void removeGameObject(final Removeable entity) {
-        this.group.getChildren().remove(entity.getGameNode());
+        this.pane.getChildren().remove(entity.getNode());
         this.collisionDelegate.remove(entity);
     }
 
     private void addSuppliedEntities() {
         if (!suppliers.isEmpty()) {
-            suppliers.forEach(supplier -> supplier.get().forEach(this::addToGameLoop));
+            suppliers.forEach(supplier -> supplier.get().forEach(this::initialize));
         }
-    }
-
-    private void addToGameLoop(final YaegerEntity entity) {
-        initialize(entity);
-        addToKeylisteners(entity);
-        attachGameEventListeners(entity);
-        placeEntityOnScene(entity);
-        addToUpdatablesOrStatics(entity);
-        collisionDelegate.register(entity);
-        addToScene(entity);
-        entity.activate();
-    }
-
-    private void placeEntityOnScene(YaegerEntity entity) {
-        entity.placeOnScene();
     }
 
     private void initialize(final YaegerEntity entity) {
-        injector.injectMembers(entity);
+        entity.beforeInitialize();
+
+        entity.applyEntityProcessor(yaegerEntity -> injector.injectMembers(yaegerEntity));
         entity.init(injector);
-        annotationProcessor.invokeActivators(entity);
+        entity.applyEntityProcessor(yaegerEntity -> annotationProcessor.invokeActivators(yaegerEntity));
+
+        entity.applyEntityProcessor(yaegerEntity -> yaegerEntity.addToEntityCollection(this));
+        entity.attachEventListener(EventTypes.REMOVE, event -> markAsGarbage((Removeable) event.getSource()));
+        entity.transferCoordinatesToNode();
+        entity.applyTranslationsForAnchorPoint();
+
+        entity.applyEntityProcessor(this::registerKeylistener);
+        entity.applyEntityProcessor(collisionDelegate::register);
+        entity.addToParent(this::addToParentNode);
     }
 
-    private void addToUpdatablesOrStatics(final YaegerEntity entity) {
-
-        if (entity instanceof Updatable) {
-            var updatable = (Updatable) entity;
-            annotationProcessor.configureUpdateDelegators(updatable);
-            updatables.add(updatable);
-        } else {
-            statics.add(entity);
-        }
+    /**
+     * Add a Dynamic Entity to this {@link EntityCollection}. By definition, a Dynamic Entity
+     * will implement the {@link Updatable} interface.
+     *
+     * @param dynamicEntity A Dynamic Entity, being an Entity that implements the interface
+     *                      {@link Updatable}.
+     */
+    public void addDynamicEntity(final Updatable dynamicEntity) {
+        annotationProcessor.configureUpdateDelegators(dynamicEntity);
+        updatables.add(dynamicEntity);
     }
 
-    private void addToKeylisteners(final YaegerEntity entity) {
+    /**
+     * Add a Static Entity to this {@link EntityCollection}.
+     *
+     * @param staticEntity A Static Entity, being a child of {@link YaegerEntity}.
+     */
+    public void addStaticEntity(YaegerEntity staticEntity) {
+        statics.add(staticEntity);
+    }
+
+    private void registerKeylistener(final YaegerEntity entity) {
         if (entity instanceof KeyListener) {
-            keyListeners.add((KeyListener) entity);
+            registerKeyListener((KeyListener) entity);
         }
     }
 
-    private void addToScene(final YaegerEntity entity) {
-        this.group.getChildren().add(entity.getGameNode().get());
-    }
-
-    private void attachGameEventListeners(final YaegerEntity entity) {
-        entity.getGameNode().ifPresent(node -> node.addEventHandler(EventTypes.REMOVE, event -> markAsGarbage(event.getSource())));
-    }
-
-    private void notifyUpdatables(final long timestamp) {
-        updatables.forEach(updatable -> updatable.update(timestamp));
+    private void addToParentNode(final YaegerEntity entity) {
+        this.pane.getChildren().add(entity.getNode().get());
     }
 
     private void updateStatistics() {
@@ -252,7 +259,7 @@ public class EntityCollection implements Initializable {
     }
 
     @Inject
-    public void setAnnotationProcessor(AnnotationProcessor annotationProcessor) {
+    public void setAnnotationProcessor(final AnnotationProcessor annotationProcessor) {
         this.annotationProcessor = annotationProcessor;
     }
 }

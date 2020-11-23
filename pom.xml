@@ -4,7 +4,7 @@
 
     <groupId>com.github.han-yaeger</groupId>
     <artifactId>yaeger</artifactId>
-    <version>2020.2021-beta2-SNAPSHOT</version>
+    <version>2020.2021-beta6-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>yaeger</name>
@@ -13,8 +13,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java.version>12</java.version>
-        <javafx.version>14.0.1</javafx.version>
+        <java.version>14</java.version>
+        <javafx.version>15.0.1</javafx.version>
         <sonar.projectKey>han-yaeger_yaeger</sonar.projectKey>
         <sonar.organization>han-yaeger</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -40,7 +40,7 @@
     <distributionManagement>
         <site>
             <id>api</id>
-            <url>https://han-yaeger.github.io/yaeger/nl.han.yaeger/module-summary.html</url>
+            <url>https://han-yaeger.github.io/yaeger/hanyaeger.api/module-summary.html</url>
         </site>
         <snapshotRepository>
             <id>ossrh</id>
@@ -162,7 +162,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.4</version>
+                <version>0.8.5</version>
                 <executions>
                     <execution>
                         <id>prepare-agent</id>
@@ -205,6 +205,7 @@
                 <version>3.2.0</version>
                 <configuration>
                     <source>${java.version}</source>
+                    <stylesheetfile>yaegerstylesheets/javadoc_stylesheet.css</stylesheetfile>
                 </configuration>
                 <executions>
                     <execution>
@@ -241,29 +242,29 @@
         <dependency>
             <groupId>org.dyn4j</groupId>
             <artifactId>dyn4j</artifactId>
-            <version>3.3.0</version>
+            <version>3.4.0</version>
         </dependency>
         <dependency>
             <groupId>com.guicedee.services</groupId>
             <artifactId>guice</artifactId>
-            <version>1.0.5.1</version>
+            <version>1.0.19.13</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.5.2</version>
+            <version>5.6.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>3.3.3</version>
+            <version>3.5.9</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
-            <version>3.3.0</version>
+            <version>3.5.9</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

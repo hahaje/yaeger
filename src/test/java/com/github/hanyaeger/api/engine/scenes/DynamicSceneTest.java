@@ -14,14 +14,12 @@ import com.github.hanyaeger.api.javafx.animationtimer.AnimationTimerFactory;
 import com.google.inject.Injector;
 import javafx.animation.AnimationTimer;
 import javafx.collections.ObservableList;
-import javafx.scene.Group;
 import javafx.scene.Scene;
-import javafx.scene.input.KeyCode;
+import javafx.scene.layout.Pane;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashSet;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -29,6 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 class DynamicSceneTest {
+
+    private final long TIMESTAMP = 0L;
 
     private DynamicSceneImpl sut;
     private SceneFactory sceneFactory;
@@ -43,7 +43,7 @@ class DynamicSceneTest {
 
     private EntityCollection entityCollection;
     private EntitySupplier entitySupplier;
-    private Group root;
+    private Pane pane;
     private Scene scene;
     private Updater updater;
 
@@ -51,7 +51,7 @@ class DynamicSceneTest {
     void setup() {
         sut = new DynamicSceneImpl();
 
-        root = mock(Group.class);
+        pane = mock(Pane.class);
         backgroundDelegate = mock(BackgroundDelegate.class);
         keyListenerDelegate = mock(KeyListenerDelegate.class);
         entitySupplier = mock(EntitySupplier.class);
@@ -66,7 +66,7 @@ class DynamicSceneTest {
         sut.setDebugger(debugger);
         sut.setSceneFactory(sceneFactory);
         sut.setEntityCollectionFactory(entityCollectionFactory);
-        sut.setRoot(root);
+        sut.setPane(pane);
         sut.setBackgroundDelegate(backgroundDelegate);
         sut.setKeyListenerDelegate(keyListenerDelegate);
         sut.setEntitySupplier(entitySupplier);
@@ -76,8 +76,8 @@ class DynamicSceneTest {
         scene = mock(Scene.class);
         entityCollection = mock(EntityCollection.class);
 
-        when(sceneFactory.create(root)).thenReturn(scene);
-        when(entityCollectionFactory.create(root)).thenReturn(entityCollection);
+        when(sceneFactory.create(pane)).thenReturn(scene);
+        when(entityCollectionFactory.create(pane)).thenReturn(entityCollection);
         when(animationTimerFactory.create(any())).thenReturn(animationTimer);
 
         sut.init(injector);
@@ -99,7 +99,7 @@ class DynamicSceneTest {
     void destroyClearsEntityCollection() {
         // Arrange
         var children = mock(ObservableList.class);
-        when(root.getChildren()).thenReturn(children);
+        when(pane.getChildren()).thenReturn(children);
         sut.activate();
 
         // Act
@@ -113,7 +113,7 @@ class DynamicSceneTest {
     void destroyClearsUpdaters() {
         // Arrange
         var children = mock(ObservableList.class);
-        when(root.getChildren()).thenReturn(children);
+        when(pane.getChildren()).thenReturn(children);
 
         sut.activate();
 
@@ -124,19 +124,6 @@ class DynamicSceneTest {
         verify(updater).clear();
     }
 
-    @Test
-    void onInputChangeNotifiesEntityCollection() {
-        // Arrange
-        var input = new HashSet<KeyCode>();
-        input.add(KeyCode.F1);
-        sut.activate();
-
-        // Act
-        sut.onInputChanged(input);
-
-        // Verify
-        verify(entityCollection).notifyGameObjectsOfPressedKeys(input);
-    }
 
     @Test
     void setEntityCollectionUpdatableReturnsUpdatable() {
@@ -172,6 +159,19 @@ class DynamicSceneTest {
 
         // Verify
         Assertions.assertEquals(updater, u);
+    }
+
+    @Test
+    void updateGetsDelegated() {
+        // Arrange
+        var updater = mock(Updater.class);
+        sut.setUpdater(updater);
+
+        // Act
+        sut.update(TIMESTAMP);
+
+        // Assert
+        verify(updater).update(TIMESTAMP);
     }
 
     private class DynamicSceneImpl extends DynamicScene {

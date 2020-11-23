@@ -8,9 +8,10 @@ import com.github.hanyaeger.api.guice.factories.EntityCollectionFactory;
 import com.github.hanyaeger.api.guice.factories.SceneFactory;
 import com.google.inject.Injector;
 import javafx.collections.ObservableList;
-import javafx.scene.Group;
 import javafx.scene.Scene;
+import javafx.scene.effect.ColorAdjust;
 import javafx.scene.input.KeyCode;
+import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import com.github.hanyaeger.api.engine.entities.EntityCollection;
@@ -18,6 +19,7 @@ import com.github.hanyaeger.api.engine.entities.entity.YaegerEntity;
 import com.github.hanyaeger.api.engine.entities.entity.events.userinput.KeyListener;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -26,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class StaticSceneTest {
-    private TestStaticScene sut;
+    private StaticSceneImpl sut;
     private SceneFactory sceneFactory;
     private EntityCollectionFactory entityCollectionFactory;
 
@@ -37,15 +39,15 @@ class StaticSceneTest {
 
     private EntityCollection entityCollection;
     private EntitySupplier entitySupplier;
-    private Group root;
+    private Pane pane;
     private Scene scene;
     private Stage stage;
 
     @BeforeEach
     void setup() {
-        sut = new TestStaticScene();
+        sut = new StaticSceneImpl();
 
-        root = mock(Group.class);
+        pane = mock(Pane.class, withSettings().withoutAnnotations());
         backgroundDelegate = mock(BackgroundDelegate.class);
         keyListenerDelegate = mock(KeyListenerDelegate.class);
         debugger = mock(Debugger.class);
@@ -58,7 +60,7 @@ class StaticSceneTest {
         sut.setDebugger(debugger);
         sut.setSceneFactory(sceneFactory);
         sut.setEntityCollectionFactory(entityCollectionFactory);
-        sut.setRoot(root);
+        sut.setPane(pane);
         sut.setBackgroundDelegate(backgroundDelegate);
         sut.setKeyListenerDelegate(keyListenerDelegate);
         sut.setEntitySupplier(entitySupplier);
@@ -67,8 +69,8 @@ class StaticSceneTest {
         scene = mock(Scene.class);
         entityCollection = mock(EntityCollection.class);
 
-        when(sceneFactory.create(root)).thenReturn(scene);
-        when(entityCollectionFactory.create(root)).thenReturn(entityCollection);
+        when(sceneFactory.create(pane)).thenReturn(scene);
+        when(entityCollectionFactory.create(pane)).thenReturn(entityCollection);
 
         sut.init(injector);
     }
@@ -103,7 +105,7 @@ class StaticSceneTest {
         sut.activate();
 
         // Verify
-        verify(sceneFactory).create(root);
+        verify(sceneFactory).create(pane);
     }
 
 
@@ -115,7 +117,7 @@ class StaticSceneTest {
         sut.activate();
 
         // Verify
-        verify(debugger).setup(root);
+        verify(debugger).setup(pane);
     }
 
 
@@ -127,7 +129,7 @@ class StaticSceneTest {
         sut.activate();
 
         // Verify
-        verify(entityCollectionFactory).create(root);
+        verify(entityCollectionFactory).create(pane);
     }
 
     @Test
@@ -157,7 +159,7 @@ class StaticSceneTest {
     void configureAddsTheDebuggerAsAStatisticsObserverToTheEntityCollection() {
         // Arrange
         var entityCollection = mock(EntityCollection.class);
-        when(entityCollectionFactory.create(root)).thenReturn(entityCollection);
+        when(entityCollectionFactory.create(pane)).thenReturn(entityCollection);
 
         // Act
         sut.activate();
@@ -170,7 +172,7 @@ class StaticSceneTest {
     void destroyDelegatesDestroy() {
         // Arrange
         var children = mock(ObservableList.class);
-        when(root.getChildren()).thenReturn(children);
+        when(pane.getChildren()).thenReturn(children);
 
         sut.activate();
 
@@ -198,20 +200,6 @@ class StaticSceneTest {
     }
 
     @Test
-    void pressingF1TogglesDebugger() {
-        // Arrange
-        var input = new HashSet<KeyCode>();
-        input.add(KeyCode.F1);
-        sut.activate();
-
-        // Act
-        sut.onPressedKeysChange(input);
-
-        // Verify
-        verify(debugger).toggle();
-    }
-
-    @Test
     void setBackgroundAudioDelegatesToBackgroundDelegate() {
         // Arrange
         final var AUDIO_STRING = "Hello World";
@@ -221,6 +209,35 @@ class StaticSceneTest {
 
         // Verify
         verify(backgroundDelegate).setBackgroundAudio(AUDIO_STRING);
+    }
+
+    @Test
+    void implementingKeyListenerAddsSceneToKeyListeners() {
+        // Arrange
+        final var sut = new StaticSceneKeyListenerImpl();
+
+        sut.setDebugger(debugger);
+        sut.setSceneFactory(sceneFactory);
+        sut.setEntityCollectionFactory(entityCollectionFactory);
+        sut.setPane(pane);
+        sut.setBackgroundDelegate(backgroundDelegate);
+        sut.setKeyListenerDelegate(keyListenerDelegate);
+        sut.setEntitySupplier(entitySupplier);
+        sut.setStage(stage);
+
+        scene = mock(Scene.class);
+        entityCollection = mock(EntityCollection.class);
+
+        when(sceneFactory.create(pane)).thenReturn(scene);
+        when(entityCollectionFactory.create(pane)).thenReturn(entityCollection);
+
+        sut.init(injector);
+
+        // Act
+        sut.activate();
+
+        // Verify
+        verify(entityCollection).registerKeyListener(sut);
     }
 
     @Test
@@ -245,6 +262,38 @@ class StaticSceneTest {
 
         // Verify
         verify(backgroundDelegate).setBackgroundImage(IMAGE_STRING);
+    }
+
+    @Test
+    void setBrightnessDelegatesToTheColorAdjust() {
+        // Arrange
+        var brightness = -0.37;
+        var colorAdjust = mock(ColorAdjust.class);
+
+        sut.setColorAdjust(colorAdjust);
+
+        // Act
+        sut.setBrightness(brightness);
+
+        // Verify
+        verify(colorAdjust).setBrightness(brightness);
+    }
+
+    @Test
+    void getBrightnessDelegatesToTheColorAdjust() {
+        // Arrange
+        var brightness = -0.37;
+        var colorAdjust = mock(ColorAdjust.class);
+
+        sut.setColorAdjust(colorAdjust);
+
+        when(colorAdjust.getBrightness()).thenReturn(brightness);
+
+        // Act
+        double actual = sut.getBrightness();
+
+        // Verify
+        assertTrue(Double.compare(actual, brightness) == 0);
     }
 
     @Test
@@ -284,7 +333,58 @@ class StaticSceneTest {
     }
 
     @Test
-    void postActivationMakeRequiredCalls() {
+    void pressingF1TogglesDebugger() {
+        // Arrange
+        var input = new HashSet<KeyCode>();
+        input.add(KeyCode.F1);
+
+        sut.activate();
+        ArgumentCaptor<KeyListener> captor = ArgumentCaptor.forClass(KeyListener.class);
+        verify(keyListenerDelegate, times(1)).setup(any(), captor.capture());
+
+        // Act
+        captor.getValue().onPressedKeysChange(input);
+
+        // Verify
+        verify(debugger).toggle();
+    }
+
+    @Test
+    void pressingF1NotifiesEntityCollection() {
+        // Arrange
+        var input = new HashSet<KeyCode>();
+        input.add(KeyCode.F1);
+
+        sut.activate();
+        ArgumentCaptor<KeyListener> captor = ArgumentCaptor.forClass(KeyListener.class);
+        verify(keyListenerDelegate, times(1)).setup(any(), captor.capture());
+
+        // Act
+        captor.getValue().onPressedKeysChange(input);
+
+        // Verify
+        verify(debugger).toggle();
+    }
+
+    @Test
+    void onInputChangeNotifiesEntityCollection() {
+        // Arrange
+        var input = new HashSet<KeyCode>();
+        input.add(KeyCode.A);
+
+        sut.activate();
+        ArgumentCaptor<KeyListener> captor = ArgumentCaptor.forClass(KeyListener.class);
+        verify(keyListenerDelegate, times(1)).setup(any(), captor.capture());
+
+        // Act
+        captor.getValue().onPressedKeysChange(input);
+
+        // Verify
+        verify(entityCollection).notifyGameObjectsOfPressedKeys(input);
+    }
+
+    @Test
+    void postActivationMakesRequiredCalls() {
         // Arrange
         sut.activate();
 
@@ -297,7 +397,7 @@ class StaticSceneTest {
         verify(debugger).toFront();
     }
 
-    private class TestStaticScene extends StaticScene {
+    private class StaticSceneImpl extends StaticScene {
 
         @Override
         public void setupScene() {
@@ -306,9 +406,23 @@ class StaticSceneTest {
         @Override
         public void setupEntities() {
         }
+    }
+
+    private class StaticSceneKeyListenerImpl extends StaticScene implements KeyListener {
 
         @Override
-        public void onInputChanged(Set<KeyCode> input) {
+        public void onPressedKeysChange(Set<KeyCode> pressedKeys) {
+
+        }
+
+        @Override
+        public void setupScene() {
+
+        }
+
+        @Override
+        public void setupEntities() {
+
         }
     }
 }

@@ -1,254 +1,263 @@
 package com.github.hanyaeger.api.engine.entities.entity.shape.rectangle;
 
-import com.github.hanyaeger.api.engine.entities.entity.Location;
+import com.github.hanyaeger.api.engine.entities.entity.Coordinate2D;
+import com.github.hanyaeger.api.engine.entities.entity.shape.ellipse.EllipseEntity;
 import com.google.inject.Injector;
-import javafx.geometry.BoundingBox;
-import javafx.geometry.Point2D;
-import javafx.scene.Node;
-import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 class RectangleEntityTest {
-    public static final double MIN_Y = 6d;
-    private static final Location LOCATION = new Location(37, 37);
-    private static final Color COLOR_FILL = Color.DARKBLUE;
-    private static final Color COLOR_STROKE = Color.LIGHTBLUE;
+    private static final Coordinate2D LOCATION = new Coordinate2D(37, 37);
     public static final double ARC_HEIGHT = 1d;
     public static final double ARC_WIDTH = 2d;
     public static final double WIDTH = 3d;
-    public static final double STROKE_WIDTH = 4d;
     public static final double HEIGHT = 5d;
-    public static final double MIN_X = 5d;
-    public static final double MAX_X = 15d;
-    public static final double MAX_Y = 16d;
 
     private Rectangle rectangle;
     private Injector injector;
+    private RectangleEntityImpl sut;
 
     @BeforeEach
     void setup() {
         rectangle = mock(Rectangle.class);
         injector = mock(Injector.class);
+
+        sut = new RectangleEntityImpl(LOCATION);
     }
 
     @Test
-    void getNodeReturnsEmptyNodeIfTextNotSet() {
+    void setAnchorLocationSetsAnchorLocationOnNode() {
         // Arrange
-        var sut = new RectangleEntityImpl(new Location(0, 0));
+        sut.setShape(rectangle);
+        var expected = new Coordinate2D(1.1, 2.2);
 
         // Act
-        Optional<Node> gameNode = sut.getGameNode();
+        sut.setAnchorLocation(expected);
 
         // Assert
-        Assertions.assertTrue(gameNode.isEmpty());
+        verify(rectangle).setX(expected.getX());
+        verify(rectangle).setY(expected.getY());
     }
 
     @Test
-    void settingPositionWithoutDelegateStoresPositionAsInitialPosition() {
+    void getWidthWithoutNodeOrBufferedWidthReturnsDefault() {
         // Arrange
-        var sut = new RectangleEntityImpl(new Location(0, 0));
 
         // Act
-        sut.setOriginX(LOCATION.getX());
-        sut.setOriginY(LOCATION.getY());
+        var actual = sut.getWidth();
 
-        // Verify
-        Assertions.assertEquals(0, Double.compare(sut.getInitialLocation().getX(), LOCATION.getX()));
-        Assertions.assertEquals(0, Double.compare(sut.getInitialLocation().getY(), LOCATION.getY()));
+        // Assert
+        assertEquals(RectangleEntity.DEFAULT_WIDTH, actual);
     }
 
     @Test
-    void getGameNodeReturnsTheRectangle() {
+    void getWidthBeforeNodeIsSetUsesBufferedWidth() {
         // Arrange
-        var sut = new RectangleEntityImpl(LOCATION);
+        sut.setWidth(WIDTH);
 
         // Act
-        sut.setRectangle(rectangle);
+        var actual = sut.getWidth();
+
+        // Assert
+        assertEquals(WIDTH, actual);
+    }
+
+    @Test
+    void getWidthAfterNodeIsSetDelegatesTheWidth() {
+        // Arrange
+        sut.setShape(rectangle);
         sut.init(injector);
 
-        // Verify
-        Assertions.assertEquals(rectangle, sut.getGameNode().get());
+        when(rectangle.getWidth()).thenReturn(WIDTH);
+
+        // Act
+        var actual = sut.getWidth();
+
+        // Assert
+        assertEquals(WIDTH, actual);
+    }
+
+    @Test
+    void getHeightWithoutNodeOrBufferedHeightReturnsDefault() {
+        // Arrange
+
+        // Act
+        var actual = sut.getHeight();
+
+        // Assert
+        assertEquals(RectangleEntity.DEFAULT_HEIGHT, actual);
+    }
+
+    @Test
+    void getHeightBeforeNodeIsSetUsesBufferedHeight() {
+        // Arrange
+        sut.setHeight(HEIGHT);
+
+        // Act
+        var actual = sut.getHeight();
+
+        // Assert
+        assertEquals(HEIGHT, actual);
+    }
+
+    @Test
+    void getHeightAfterNodeIsSetDelegatesTheHeight() {
+        // Arrange
+        sut.setShape(rectangle);
+        sut.init(injector);
+
+        when(rectangle.getHeight()).thenReturn(HEIGHT);
+
+        // Act
+        var actual = sut.getHeight();
+
+        // Assert
+        assertEquals(HEIGHT, actual);
+    }
+
+    @Test
+    void getArcWidthWithoutNodeOrBufferedArcWidthReturnsDefault() {
+        // Arrange
+
+        // Act
+        var actual = sut.getArcWidth();
+
+        // Assert
+        assertEquals(RectangleEntity.DEFAULT_ARC, actual);
+    }
+
+    @Test
+    void getArcWidthBeforeNodeIsSetUsesBufferedArcWidth() {
+        // Arrange
+        sut.setArcWidth(ARC_WIDTH);
+
+        // Act
+        var actual = sut.getArcWidth();
+
+        // Assert
+        assertEquals(ARC_WIDTH, actual);
+    }
+
+    @Test
+    void getArcWidthAfterNodeIsSetDelegatesTheArcWidth() {
+        // Arrange
+        sut.setShape(rectangle);
+        sut.init(injector);
+
+        when(rectangle.getArcWidth()).thenReturn(ARC_WIDTH);
+
+        // Act
+        var actual = sut.getArcWidth();
+
+        // Assert
+        assertEquals(ARC_WIDTH, actual);
+    }
+
+    @Test
+    void getArcHeightWithoutNodeOrBufferedArcHeightReturnsDefault() {
+        // Arrange
+
+        // Act
+        var actual = sut.getArcHeight();
+
+        // Assert
+        assertEquals(RectangleEntity.DEFAULT_ARC, actual);
+    }
+
+    @Test
+    void getArcHeightBeforeNodeIsSetUsesBufferedHeight() {
+        // Arrange
+        sut.setArcHeight(ARC_HEIGHT);
+
+        // Act
+        var actual = sut.getArcHeight();
+
+        // Assert
+        assertEquals(ARC_HEIGHT, actual);
+    }
+
+    @Test
+    void getArcHeightAfterNodeIsSetDelegatesTheArcHeight() {
+        // Arrange
+        sut.setShape(rectangle);
+        sut.init(injector);
+
+        when(rectangle.getArcHeight()).thenReturn(ARC_HEIGHT);
+
+        // Act
+        var actual = sut.getArcHeight();
+
+        // Assert
+        assertEquals(ARC_HEIGHT, actual);
     }
 
     @Test
     void settingValuesAfterDelegateIsSetDelegatesTheValues() {
         // Arrange
-        var rectangleEntity = new RectangleEntityImpl(LOCATION);
-        rectangleEntity.setRectangle(rectangle);
-        rectangleEntity.init(injector);
+        sut.setShape(rectangle);
+        sut.init(injector);
 
         // Act
-        rectangleEntity.setArcHeight(ARC_HEIGHT);
-        rectangleEntity.setArcWidth(ARC_WIDTH);
-        rectangleEntity.setWidth(WIDTH);
-        rectangleEntity.setHeight(HEIGHT);
-        rectangleEntity.setStrokeWidth(STROKE_WIDTH);
-        rectangleEntity.setFill(COLOR_FILL);
-        rectangleEntity.setStrokeColor(COLOR_STROKE);
+        sut.setArcHeight(ARC_HEIGHT);
+        sut.setArcWidth(ARC_WIDTH);
+        sut.setWidth(WIDTH);
+        sut.setHeight(HEIGHT);
 
-        // Verify
+        // Assert
         verify(rectangle).setVisible(true);
         verify(rectangle).setArcWidth(ARC_WIDTH);
         verify(rectangle).setArcHeight(ARC_HEIGHT);
         verify(rectangle).setWidth(WIDTH);
         verify(rectangle).setHeight(HEIGHT);
-        verify(rectangle).setStrokeWidth(STROKE_WIDTH);
-        verify(rectangle).setStroke(COLOR_STROKE);
-        verify(rectangle).setFill(COLOR_FILL);
     }
 
     @Test
-    void getLeftXTakesTheStrokeWidthIntoAccount() {
+    void ifNodeNotYetSetStrokeHeightIsStoredAndSetAtInit() {
         // Arrange
-        var sut = new RectangleEntityImpl(LOCATION);
-        var bounds = mock(BoundingBox.class);
-        when(rectangle.getBoundsInLocal()).thenReturn(bounds);
-
-        when(bounds.getMinX()).thenReturn(MIN_X);
-        when(bounds.getMinY()).thenReturn(MIN_Y);
-        when(bounds.getMaxX()).thenReturn(MAX_X);
-        when(bounds.getMaxY()).thenReturn(MAX_Y);
-
-        when(rectangle.getStrokeWidth()).thenReturn(STROKE_WIDTH);
-
-        sut.setRectangle(rectangle);
-        sut.init(injector);
-
-        // Act
-        double leftX = sut.getLeftX();
-
-        // Verify
-        Assertions.assertEquals(MIN_X + (STROKE_WIDTH / 2), leftX);
-    }
-
-    @Test
-    void getTopXTakesTheStrokeWidthIntoAccount() {
-        // Arrange
-        var sut = new RectangleEntityImpl(LOCATION);
-        var bounds = mock(BoundingBox.class);
-        when(rectangle.getBoundsInLocal()).thenReturn(bounds);
-
-        when(bounds.getMinX()).thenReturn(MIN_X);
-        when(bounds.getMinY()).thenReturn(MIN_Y);
-        when(bounds.getMaxX()).thenReturn(MAX_X);
-        when(bounds.getMaxY()).thenReturn(MAX_Y);
-
-        when(rectangle.getStrokeWidth()).thenReturn(STROKE_WIDTH);
-
-        sut.setRectangle(rectangle);
-        sut.init(injector);
-
-        // Act
-        double topY = sut.getTopY();
-
-        // Verify
-        Assertions.assertEquals(MIN_Y + (STROKE_WIDTH / 2), topY);
-    }
-
-    @Test
-    void ifRectangleNotYetSetStrokeHeightIsStoredAndSetAtInit() {
-        // Arrange
-        var sut = new RectangleEntityImpl(LOCATION);
 
         // Act
         sut.setHeight(HEIGHT);
-        sut.setRectangle(rectangle);
+        sut.setShape(rectangle);
         sut.init(injector);
 
-        // Verify
+        // Assert
         verify(rectangle).setHeight(HEIGHT);
     }
 
     @Test
-    void ifRectangleNotYetSetArcWidthIsStoredAndSetAtInit() {
+    void ifNodeNotYetSetArcWidthIsStoredAndSetAtInit() {
         // Arrange
-        var sut = new RectangleEntityImpl(LOCATION);
+        sut.setArcWidth(ARC_WIDTH);
+        sut.setShape(rectangle);
 
         // Act
-        sut.setArcWidth(ARC_WIDTH);
-        sut.setRectangle(rectangle);
         sut.init(injector);
 
-        // Verify
+        // Assert
         verify(rectangle).setArcWidth(ARC_WIDTH);
     }
 
     @Test
-    void ifRectangleNotYetSetArcHeightIsStoredAndSetAtInit() {
+    void ifNodeNotYetSetArcHeightIsStoredAndSetAtInit() {
         // Arrange
-        var sut = new RectangleEntityImpl(LOCATION);
-
-        // Act
         sut.setArcHeight(ARC_HEIGHT);
-        sut.setRectangle(rectangle);
+        sut.setShape(rectangle);
+
+        // Act
         sut.init(injector);
 
-        // Verify
+        // Assert
         verify(rectangle).setArcHeight(ARC_HEIGHT);
-    }
-
-    @Test
-    void ifRectangleNotYetSetStrokeColorIsStoredAndSetAtInit() {
-        // Arrange
-        var sut = new RectangleEntityImpl(LOCATION);
-
-        // Act
-        sut.setStrokeColor(COLOR_STROKE);
-        sut.setRectangle(rectangle);
-        sut.init(injector);
-
-        // Verify
-        verify(rectangle).setStroke(COLOR_STROKE);
-    }
-
-    @Test
-    void ifRectangleNotYetSetStrokeWidthIsStoredAndSetAtInit() {
-        // Arrange
-        var sut = new RectangleEntityImpl(LOCATION);
-
-        // Act
-        sut.setStrokeWidth(STROKE_WIDTH);
-        sut.setRectangle(rectangle);
-        sut.init(injector);
-
-        // Verify
-        verify(rectangle).setStrokeWidth(STROKE_WIDTH);
-    }
-
-    @Test
-    void ifRectangleNotYetSetFillIsStoredAndSetAtInit() {
-        // Arrange
-        var sut = new RectangleEntityImpl(LOCATION);
-
-        // Act
-        sut.setFill(COLOR_FILL);
-        sut.setRectangle(rectangle);
-        sut.init(injector);
-
-        // Verify
-        verify(rectangle).setFill(COLOR_FILL);
     }
 
     private class RectangleEntityImpl extends RectangleEntity {
 
-        /**
-         * Create a new {@link RectangleEntity} on the given {@code initialPosition}.
-         *
-         * @param initialPosition The initial position at which this {@link RectangleEntity} should be placed
-         */
-        public RectangleEntityImpl(Location initialPosition) {
+        public RectangleEntityImpl(Coordinate2D initialPosition) {
             super(initialPosition);
-        }
-
-        public Point2D getInitialLocation() {
-            return new Point2D(initialX, initialY);
         }
     }
 }

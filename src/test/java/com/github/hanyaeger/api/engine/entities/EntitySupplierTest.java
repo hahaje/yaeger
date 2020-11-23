@@ -1,6 +1,6 @@
 package com.github.hanyaeger.api.engine.entities;
 
-import com.github.hanyaeger.api.engine.entities.entity.Location;
+import com.github.hanyaeger.api.engine.entities.entity.Coordinate2D;
 import com.github.hanyaeger.api.engine.entities.entity.YaegerEntity;
 import javafx.scene.Node;
 import com.github.hanyaeger.api.engine.entities.entity.AnchorPoint;
@@ -9,44 +9,42 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class EntitySupplierTest {
 
-    private static final Location DEFAULT_LOCATION = new Location(0, 0);
-    private EntitySupplier entitySupplier;
-
+    private static final Coordinate2D DEFAULT_LOCATION = new Coordinate2D(0, 0);
+    private EntitySupplier sut;
 
     @BeforeEach
     void setup() {
-        entitySupplier = new EntitySupplier();
+        sut = new EntitySupplier();
     }
 
     @Test
     void addEntitiesAddsEntity() {
         // Arrange
-        YaegerEntity entity = new TestEntity(DEFAULT_LOCATION);
+        var entity = new TestEntity(DEFAULT_LOCATION);
 
         // Act
-        entitySupplier.add(entity);
+        sut.add(entity);
 
         // Assert
-        Assertions.assertEquals(1, entitySupplier.size());
+        Assertions.assertEquals(1, sut.size());
     }
 
     @Test
     void clearClearsListOfSpawnedEntities() {
         // Arrange
-        YaegerEntity entity = new TestEntity(DEFAULT_LOCATION);
+        var entity = new TestEntity(DEFAULT_LOCATION);
 
         // Act
-        entitySupplier.add(entity);
-        entitySupplier.clear();
+        sut.add(entity);
+        sut.clear();
 
         // Assert
-        Assertions.assertEquals(0, entitySupplier.size());
+        Assertions.assertEquals(0, sut.size());
     }
 
     @Test
@@ -54,7 +52,7 @@ class EntitySupplierTest {
         // Arrange
 
         // Act
-        Set<YaegerEntity> entities = entitySupplier.get();
+        var entities = sut.get();
 
         // Assert
         Assertions.assertEquals(0, entities.size());
@@ -63,23 +61,33 @@ class EntitySupplierTest {
     @Test
     void twoDifferentSuppliersWithNoContentAreNotEqual() {
         // Arrange
-        var sut1 = new EntitySupplier();
-        var sut2 = new EntitySupplier();
+        var otherSut = new EntitySupplier();
 
         // Act
-        boolean equals = sut1.equals(sut2);
+        var equals = sut.equals(otherSut);
 
         // Assert
         Assertions.assertFalse(equals);
     }
 
+    @Test
+    void supplierIsEqualToSelf() {
+        // Arrange
+
+        // Act
+        var equals = sut.equals(sut);
+
+        // Assert
+        Assertions.assertTrue(equals);
+    }
+
     private class TestEntity extends YaegerEntity {
         /**
-         * Instantiate a new {@link YaegerEntity} for the given {@link Location} and textDelegate.
+         * Instantiate a new {@link YaegerEntity} for the given {@link Coordinate2D} and textDelegate.
          *
-         * @param initialPosition the initial {@link Location} of this {@link YaegerEntity}
+         * @param initialPosition the initial {@link Coordinate2D} of this {@link YaegerEntity}
          */
-        public TestEntity(Location initialPosition) {
+        public TestEntity(Coordinate2D initialPosition) {
             super(initialPosition);
         }
 
@@ -89,7 +97,7 @@ class EntitySupplierTest {
         }
 
         @Override
-        public Optional<Node> getGameNode() {
+        public Optional<? extends Node> getNode() {
             return null;
         }
 
@@ -102,16 +110,5 @@ class EntitySupplierTest {
         public AnchorPoint getAnchorPoint() {
             return null;
         }
-
-        @Override
-        public void setOriginX(double x) {
-            // Not required here.
-        }
-
-        @Override
-        public void setOriginY(double y) {
-            // Not required here.
-        }
-
     }
 }

@@ -84,7 +84,7 @@ class SceneChildTest {
         private Optional<Node> node;
 
         @Override
-        public Optional<Node> getGameNode() {
+        public Optional<? extends Node> getNode() {
             return node;
         }
 

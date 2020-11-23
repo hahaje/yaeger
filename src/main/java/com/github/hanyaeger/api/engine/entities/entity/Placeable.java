@@ -9,39 +9,38 @@ import com.github.hanyaeger.api.engine.scenes.YaegerScene;
 public interface Placeable extends Bounded, Anchorable {
 
     /**
-     * @return The x-coordinate of the top-left corner of the Bounding Box without any transformations
-     * (e.g. translations, rotations) as a {@code double}.
-     */
-    default double getOriginX() {
-        return getLeftX();
-    }
-
-    /**
-     * @return The y-coordinate of the top-left corner of the Bounding Box without any transformations
-     * (e.g. translations, rotations) as a {@code double}.
-     */
-    default double getOriginY() {
-        return getTopY();
-    }
-
-    /**
-     * Set the new x-coordinate of this {@link YaegerEntity}. The x-coordinate will be of the top-left
-     * corner of the {@link javafx.geometry.BoundingBox} that is being used by this {@link YaegerEntity}.
+     * Set the x-coordinate of the {@code AnchorLocation} of this {@link YaegerEntity};
      *
-     * @param x the x-coordinate as a {@code double}.
+     * @param x the x-coordinate as a {@code double}
      */
-    void setOriginX(final double x);
+    void setAnchorLocationX(final double x);
 
     /**
-     * Set the new y-coordinate of this {@link YaegerEntity}.The y-coordinate will be of the top-left
-     * corner of the {@link javafx.geometry.BoundingBox} that is being used by this {@link YaegerEntity}.
+     * Set the y-coordinate of the {@code AnchorLocation} of this {@link YaegerEntity};
      *
-     * @param y the y-coordinate as a {@code double}.
+     * @param y the y-coordinate as a {@code double}
      */
-    void setOriginY(final double y);
+    void setAnchorLocationY(final double y);
 
     /**
-     * Place the {@link YaegerEntity} on the scene at its x,y-coordinate.
+     * Set the {@link Coordinate2D} where the {@link AnchorPoint} of this {@link YaegerEntity} will be placed, within
+     * the {@link com.github.hanyaeger.api.engine.scenes.YaegerScene}.
+     *
+     * @param anchorLocation the {@link Coordinate2D} that should be used
      */
-    void placeOnScene();
+    void setAnchorLocation(final Coordinate2D anchorLocation);
+
+    /**
+     * Return the {@link Coordinate2D} where the {@link AnchorPoint} of this {@link YaegerEntity} is placed, within
+     * the {@link com.github.hanyaeger.api.engine.scenes.YaegerScene}.
+     *
+     * @return the {@link Coordinate2D} that is currently being used
+     */
+    Coordinate2D getAnchorLocation();
+
+    /**
+     * Transfer the x and y-coordinate of this {@link YaegerEntity} to its JavaFX {@link javafx.scene.Node}
+     * and apply the requested transformations.
+     */
+    void transferCoordinatesToNode();
 }

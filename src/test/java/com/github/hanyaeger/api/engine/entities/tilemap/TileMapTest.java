@@ -2,7 +2,7 @@ package com.github.hanyaeger.api.engine.entities.tilemap;
 
 import com.github.hanyaeger.api.engine.Size;
 import com.github.hanyaeger.api.engine.entities.entity.AnchorPoint;
-import com.github.hanyaeger.api.engine.entities.entity.Location;
+import com.github.hanyaeger.api.engine.entities.entity.Coordinate2D;
 import com.github.hanyaeger.api.engine.entities.entity.YaegerEntity;
 import com.github.hanyaeger.api.engine.exceptions.EntityNotAvailableException;
 import com.github.hanyaeger.api.engine.exceptions.YaegerEngineException;
@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -24,7 +25,7 @@ class TileMapTest {
     private static final double WIDTH = 370;
     private static final double HEIGHT = 420;
 
-    private static final Location LOCATION = new Location(10, 20);
+    private static final Coordinate2D LOCATION = new Coordinate2D(10, 20);
     private static final Size SIZE = new Size(200, 100);
 
     @BeforeEach
@@ -352,8 +353,8 @@ class TileMapTest {
         // Assert
         ArgumentCaptor<Size> argument = ArgumentCaptor.forClass(Size.class);
         verify(tileFactory).create(any(), any(), argument.capture());
-        assertEquals(SIZE.getHeight() / 3, argument.getValue().getHeight());
-        assertEquals(SIZE.getWidth() / 3, argument.getValue().getWidth());
+        assertEquals(Math.ceil(SIZE.getHeight() / 3), argument.getValue().getHeight());
+        assertEquals(Math.ceil(SIZE.getWidth() / 3), argument.getValue().getWidth());
     }
 
     @Test
@@ -388,7 +389,7 @@ class TileMapTest {
         // Assert
         ArgumentCaptor<Size> argument = ArgumentCaptor.forClass(Size.class);
         verify(tileFactory).create(any(), any(), argument.capture());
-        assertEquals(SIZE.getHeight() / 3, argument.getValue().getHeight());
+        assertEquals(Math.ceil(SIZE.getHeight() / 3), argument.getValue().getHeight());
         assertEquals(SIZE.getWidth(), argument.getValue().getWidth());
     }
 
@@ -424,7 +425,7 @@ class TileMapTest {
         localSut.activate();
 
         // Assert
-        ArgumentCaptor<Location> argument = ArgumentCaptor.forClass(Location.class);
+        ArgumentCaptor<Coordinate2D> argument = ArgumentCaptor.forClass(Coordinate2D.class);
         verify(tileFactory).create(any(), argument.capture(), any());
         assertEquals(LOCATION.getX(), argument.getValue().getX());
         assertEquals(LOCATION.getY(), argument.getValue().getY());
@@ -462,7 +463,7 @@ class TileMapTest {
         localSut.activate();
 
         // Assert
-        ArgumentCaptor<Location> argument = ArgumentCaptor.forClass(Location.class);
+        ArgumentCaptor<Coordinate2D> argument = ArgumentCaptor.forClass(Coordinate2D.class);
         verify(tileFactory).create(any(), argument.capture(), any());
 
         var expectedX = LOCATION.getX() - SIZE.getWidth() / 2;
@@ -503,7 +504,7 @@ class TileMapTest {
         localSut.activate();
 
         // Assert
-        ArgumentCaptor<Location> argument = ArgumentCaptor.forClass(Location.class);
+        ArgumentCaptor<Coordinate2D> argument = ArgumentCaptor.forClass(Coordinate2D.class);
         verify(tileFactory).create(any(), argument.capture(), any());
 
         var expectedX = LOCATION.getX() - SIZE.getWidth();
@@ -544,7 +545,7 @@ class TileMapTest {
         localSut.activate();
 
         // Assert
-        ArgumentCaptor<Location> argument = ArgumentCaptor.forClass(Location.class);
+        ArgumentCaptor<Coordinate2D> argument = ArgumentCaptor.forClass(Coordinate2D.class);
         verify(tileFactory).create(any(), argument.capture(), any());
 
         var expectedX = LOCATION.getX();
@@ -586,7 +587,7 @@ class TileMapTest {
         localSut.activate();
 
         // Assert
-        ArgumentCaptor<Location> argument = ArgumentCaptor.forClass(Location.class);
+        ArgumentCaptor<Coordinate2D> argument = ArgumentCaptor.forClass(Coordinate2D.class);
         verify(tileFactory).create(any(), argument.capture(), any());
 
         var expectedX = LOCATION.getX() - SIZE.getWidth() / 2;
@@ -628,7 +629,7 @@ class TileMapTest {
         localSut.activate();
 
         // Assert
-        ArgumentCaptor<Location> argument = ArgumentCaptor.forClass(Location.class);
+        ArgumentCaptor<Coordinate2D> argument = ArgumentCaptor.forClass(Coordinate2D.class);
         verify(tileFactory).create(any(), argument.capture(), any());
 
         var expectedX = LOCATION.getX() - SIZE.getWidth();
@@ -672,7 +673,7 @@ class TileMapTest {
         localSut.activate();
 
         // Assert
-        ArgumentCaptor<Location> argument = ArgumentCaptor.forClass(Location.class);
+        ArgumentCaptor<Coordinate2D> argument = ArgumentCaptor.forClass(Coordinate2D.class);
         verify(tileFactory).create(any(), argument.capture(), any());
 
         var expectedX = LOCATION.getX();
@@ -714,7 +715,7 @@ class TileMapTest {
         localSut.activate();
 
         // Assert
-        ArgumentCaptor<Location> argument = ArgumentCaptor.forClass(Location.class);
+        ArgumentCaptor<Coordinate2D> argument = ArgumentCaptor.forClass(Coordinate2D.class);
         verify(tileFactory).create(any(), argument.capture(), any());
 
         var expectedX = LOCATION.getX() - SIZE.getWidth() / 2;
@@ -756,7 +757,7 @@ class TileMapTest {
         localSut.activate();
 
         // Assert
-        ArgumentCaptor<Location> argument = ArgumentCaptor.forClass(Location.class);
+        ArgumentCaptor<Coordinate2D> argument = ArgumentCaptor.forClass(Coordinate2D.class);
         verify(tileFactory).create(any(), argument.capture(), any());
 
         var expectedX = LOCATION.getX() - SIZE.getWidth();
@@ -764,6 +765,97 @@ class TileMapTest {
 
         assertEquals(expectedX, argument.getValue().getX());
         assertEquals(expectedY, argument.getValue().getY());
+    }
+
+    @Test
+    void tilesPlacedAtCorrectCoordinates() {
+        // Arrange
+        var sceneWidth = 1024d;
+        var sceneHeight = 10d;
+
+        var tileWidth = sceneWidth / 15d;
+
+        var horizontalSut = new TileMap(new Coordinate2D(0, 0), new Size(sceneWidth, sceneHeight)) {
+            @Override
+            public void setupEntities() {
+                addEntity(1, SpriteEntityOne.class);
+            }
+
+            @Override
+            public int[][] defineMap() {
+                int[][] map = {{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}};
+                return map;
+            }
+        };
+
+        horizontalSut.setAnchorPoint(AnchorPoint.TOP_LEFT);
+
+        var entity = mock(YaegerEntity.class);
+        var tileFactory = mock(TileFactory.class);
+        when(tileFactory.create(any(), any(), any())).thenReturn(entity);
+
+        horizontalSut.setTileFactory(tileFactory);
+
+        // Act
+        horizontalSut.activate();
+
+        // Assert
+
+        ArgumentCaptor<Coordinate2D> argument = ArgumentCaptor.forClass(Coordinate2D.class);
+        verify(tileFactory, times(15)).create(any(), argument.capture(), any());
+
+        List<Coordinate2D> capturedCoordinates = argument.getAllValues();
+
+        for (int i = 0; i < 15; i++) {
+            assertEquals(Math.round(0 + (i * tileWidth)), capturedCoordinates.get(i).getX());
+            assertEquals(0, capturedCoordinates.get(i).getY());
+        }
+    }
+
+    @Test
+    void tilesCreatedWithCorrectSize() {
+        // Arrange
+        var sceneWidth = 1024d;
+        var sceneHeight = 10d;
+
+        var expectedWidth = Math.ceil(sceneWidth / 15d);
+        var expectedHeight = 10;
+
+        var horizontalSut = new TileMap(new Coordinate2D(0, 0), new Size(sceneWidth, sceneHeight)) {
+            @Override
+            public void setupEntities() {
+                addEntity(1, SpriteEntityOne.class);
+            }
+
+            @Override
+            public int[][] defineMap() {
+                int[][] map = {{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}};
+                return map;
+            }
+        };
+
+        horizontalSut.setAnchorPoint(AnchorPoint.TOP_LEFT);
+
+        var entity = mock(YaegerEntity.class);
+        var tileFactory = mock(TileFactory.class);
+        when(tileFactory.create(any(), any(), any())).thenReturn(entity);
+
+        horizontalSut.setTileFactory(tileFactory);
+
+        // Act
+        horizontalSut.activate();
+
+        // Assert
+
+        ArgumentCaptor<Size> argument = ArgumentCaptor.forClass(Size.class);
+        verify(tileFactory, times(15)).create(any(), any(), argument.capture());
+
+        List<Size> capturedSizes = argument.getAllValues();
+
+        for (int i = 0; i < 15; i++) {
+            assertEquals(expectedWidth, capturedSizes.get(i).getWidth());
+            assertEquals(expectedHeight, capturedSizes.get(i).getHeight());
+        }
     }
 
     private class TileMapEmptyConstructorImpl extends TileMap {
@@ -793,7 +885,7 @@ class TileMapTest {
 
     private class TileMapFilledConstructorImpl extends TileMap {
 
-        public TileMapFilledConstructorImpl(final Location location, final Size size) {
+        public TileMapFilledConstructorImpl(final Coordinate2D location, final Size size) {
             super(location, size);
         }
 
@@ -811,7 +903,7 @@ class TileMapTest {
             return size;
         }
 
-        public Optional<Location> getLocation() {
+        public Optional<Coordinate2D> getLocation() {
             return location;
         }
     }

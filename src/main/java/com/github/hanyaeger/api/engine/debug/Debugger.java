@@ -1,7 +1,6 @@
 package com.github.hanyaeger.api.engine.debug;
 
 import com.google.inject.Inject;
-import javafx.scene.Group;
 import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
 import com.github.hanyaeger.api.engine.media.repositories.AudioRepository;
@@ -10,6 +9,7 @@ import com.github.hanyaeger.api.javafx.debug.DebugLabelFactory;
 import com.github.hanyaeger.api.engine.entities.EntityCollectionStatistics;
 import com.github.hanyaeger.api.javafx.debug.DebugGridPaneFactory;
 import com.github.hanyaeger.api.engine.entities.EntityCollection;
+import javafx.scene.layout.Pane;
 
 /**
  * The {@code Debugger} is used to gather and show in game debug information.
@@ -46,8 +46,8 @@ public class Debugger implements StatisticsObserver {
     private Label audioFiles;
     private Label imageFiles;
 
-    public void setup(Group group) {
-        createGridPane(group);
+    public void setup(Pane pane) {
+        createGridPane(pane);
     }
 
     /**
@@ -90,7 +90,7 @@ public class Debugger implements StatisticsObserver {
         imageFiles.setText(String.valueOf(imageRepository.size()));
     }
 
-    private void createGridPane(Group group) {
+    private void createGridPane(Pane pane) {
         gridpane = debugGridPaneFactory.create();
 
         addHeader();
@@ -98,7 +98,7 @@ public class Debugger implements StatisticsObserver {
         addEntityStatistics();
         addResourcesStatistics();
 
-        group.getChildren().add(gridpane);
+        pane.getChildren().add(gridpane);
     }
 
     private void addHeader() {

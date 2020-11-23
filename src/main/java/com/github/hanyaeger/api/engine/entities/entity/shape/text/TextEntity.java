@@ -1,49 +1,44 @@
 package com.github.hanyaeger.api.engine.entities.entity.shape.text;
 
-import com.github.hanyaeger.api.engine.entities.entity.Location;
-import com.github.hanyaeger.api.engine.entities.entity.YaegerEntity;
+import com.github.hanyaeger.api.engine.entities.entity.Coordinate2D;
+import com.github.hanyaeger.api.engine.entities.entity.shape.ShapeEntity;
 import com.github.hanyaeger.api.engine.scenes.YaegerScene;
-import com.google.inject.Inject;
 import com.google.inject.Injector;
 import javafx.geometry.Point2D;
 import javafx.geometry.VPos;
-import javafx.scene.Node;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 
-import java.util.Optional;
-
 /**
- * A {@code TextEntity} can be used to display a line of text on a {@link YaegerScene}. The text will be placed, using
- * the top left corner as its anchor point.
+ * A {@link TextEntity} can be used to display a line of text on a {@link YaegerScene}.
  */
-public class TextEntity extends YaegerEntity {
+public class TextEntity extends ShapeEntity<Text> {
 
-    private Color fill;
-    private Font font;
-    private String initialText;
-    private Optional<Text> text;
+    static final Font DEFAULT_FONT = Font.font("roboto", FontWeight.NORMAL, 11);
+
+    private Font font = DEFAULT_FONT;
+    private String text;
 
     /**
-     * Instantiate a new {@code TextEntity} for the given {@link Point2D}.
+     * Create a new empty {@link TextEntity} on the given {@link Coordinate2D}.
      *
-     * @param initialPosition the initial {@link Location} of this {@code TextEntity}
+     * @param initialLocation the initial {@link Coordinate2D} of this {@link TextEntity}
      */
-    public TextEntity(final Location initialPosition) {
-        this(initialPosition, "");
+    public TextEntity(final Coordinate2D initialLocation) {
+        this(initialLocation, "");
     }
 
     /**
-     * Instantiate a new {@link TextEntity} for the given {@link Point2D} and textDelegate.
+     * Crwate a new {@link TextEntity} on the given {@link Point2D} for the given text.
      *
-     * @param initialPosition the initial {@link Point2D} of this {@code TextEntity}
-     * @param text            a {@link String} containing the initial textDelegate to be displayed
+     * @param initialLocation the initial {@link Coordinate2D} of this {@link TextEntity}
+     * @param text            a {@link String} containing the initial text to be displayed
      */
-    public TextEntity(final Location initialPosition, final String text) {
-        super(initialPosition);
-        this.text = Optional.empty();
-        this.initialText = text;
+    public TextEntity(final Coordinate2D initialLocation, final String text) {
+        super(initialLocation);
+        this.text = text;
     }
 
     /**
@@ -52,16 +47,16 @@ public class TextEntity extends YaegerEntity {
      * @param displayText the {@link String} that should be shown
      */
     public void setText(final String displayText) {
-        text.ifPresentOrElse(text -> text.setText(displayText), () -> this.initialText = displayText);
+        shape.ifPresentOrElse(text -> text.setText(displayText), () -> this.text = displayText);
     }
 
     /**
-     * Set the color of the text.
+     * Return the {@code text} that is being displayed.
      *
-     * @param color an instance of {@link Color}
+     * @return the {@code text} that is being displayed as a {@link String}
      */
-    public void setFill(final Color color) {
-        text.ifPresentOrElse(text -> text.setFill(color), () -> this.fill = color);
+    public String getText() {
+        return shape.map(Text::getText).orElse(text);
     }
 
     /**
@@ -77,48 +72,35 @@ public class TextEntity extends YaegerEntity {
      * @param font the {@link Font} to be used
      */
     public void setFont(final Font font) {
-        text.ifPresentOrElse(text -> text.setFont(font), () -> this.font = font);
+        shape.ifPresentOrElse(text -> text.setFont(font), () -> this.font = font);
+    }
+
+    /**
+     * Return the {@link Font} currently used fot this {@link TextEntity}.
+     *
+     * @return the {@link Font} currently used fot this {@link TextEntity}
+     */
+    public Font getFont() {
+        return shape.map(Text::getFont).orElse(font);
     }
 
     @Override
-    public void setOriginX(double x) {
-
-        text.ifPresentOrElse(text -> text.setX(x), () -> initialX = x);
-    }
-
-    @Override
-    public void setOriginY(double y) {
-        text.ifPresentOrElse(text -> text.setY(y), () -> initialY = y);
+    public final void setAnchorLocation(final Coordinate2D anchorLocation) {
+        super.setAnchorLocation(anchorLocation);
+        shape.ifPresent(text -> {
+            text.setX(anchorLocation.getX());
+            text.setY(anchorLocation.getY());
+        });
     }
 
     @Override
     public void init(final Injector injector) {
         super.init(injector);
 
-        text.get().setTextOrigin(VPos.TOP);
-
-        if (font != null) {
-            text.get().setFont(font);
-        }
-        if (fill != null) {
-            text.get().setFill(fill);
-        }
-        if (initialText != null && !initialText.isEmpty()) {
-            text.get().setText(initialText);
-        }
-    }
-
-    @Inject
-    public void setTextDelegate(final Text text) {
-        this.text = Optional.of(text);
-    }
-
-    @Override
-    public Optional<Node> getGameNode() {
-        if (text.isPresent()) {
-            return Optional.of(text.get());
-        } else {
-            return Optional.empty();
-        }
+        shape.ifPresent(shape -> {
+            shape.setTextOrigin(VPos.TOP);
+            shape.setText(text);
+            shape.setFont(font);
+        });
     }
 }

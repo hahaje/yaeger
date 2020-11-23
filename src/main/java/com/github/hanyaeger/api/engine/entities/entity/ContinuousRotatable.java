@@ -2,7 +2,13 @@ package com.github.hanyaeger.api.engine.entities.entity;
 
 import com.github.hanyaeger.api.engine.Updatable;
 import com.github.hanyaeger.api.engine.annotations.UpdatableProvider;
+import com.github.hanyaeger.api.engine.entities.entity.motion.Rotatable;
 
+/**
+ * When implementing this Interface, a {@link YaegerEntity} will acquire the behaviour to
+ * perform a rotation on each Game World update, and thus give the illusion of a continuous
+ * rotation.
+ */
 public interface ContinuousRotatable extends Rotatable {
 
     /**
@@ -14,7 +20,9 @@ public interface ContinuousRotatable extends Rotatable {
 
     /**
      * Set the angle at which this {@link YaegerEntity} will bew rotated
-     * at each update.
+     * at each update. Note that a positive rotation value rotates the
+     * {@link YaegerEntity} counter clockwise, and a negative value rotates
+     * the {@link YaegerEntity} clockwise.
      *
      * @param angle the angle as a {@code double}
      */
@@ -24,8 +32,8 @@ public interface ContinuousRotatable extends Rotatable {
     default Updatable applyRotation() {
         return timestamp -> {
             if (Double.compare(getRotationSpeed(), 0d) != 0) {
-                if (getGameNode().isPresent()) {
-                    setRotate(getGameNode().get().getRotate() + getRotationSpeed());
+                if (getNode().isPresent()) {
+                    setRotate(-getNode().get().getRotate() + getRotationSpeed());
                 }
             }
         };

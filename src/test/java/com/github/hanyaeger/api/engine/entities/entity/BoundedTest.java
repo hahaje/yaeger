@@ -30,7 +30,7 @@ class BoundedTest {
     @Test
     void getNonTransformedBoundsReturnsZeroBoundingBoxIfGameNodeIsNotPresent() {
         // Arrange
-        var sut = new EmptyNodeBoundedImpl();
+        var sut = new EmptyGameNodeBoundedImpl();
 
         // Act
         var boundingBox = sut.getNonTransformedBounds();
@@ -56,7 +56,7 @@ class BoundedTest {
     @Test
     void getTransformedBoundsReturnsZeroBoundingBoxIfGameNodeIsNotPresent() {
         // Arrange
-        var sut = new EmptyNodeBoundedImpl();
+        var sut = new EmptyGameNodeBoundedImpl();
 
         // Act
         var boundingBox = sut.getTransformedBounds();
@@ -77,6 +77,33 @@ class BoundedTest {
 
         // Assert
         Mockito.verify(node).getBoundsInParent();
+    }
+
+    @Test
+    void getBoundsInSceneReturnsZeroBoundingBoxIfGameNodeIsNotPresent() {
+        // Arrange
+        var sut = new EmptyGameNodeBoundedImpl();
+
+        // Act
+        var boundingBox = sut.getBoundsInScene();
+
+        // Assert
+        Assertions.assertEquals(0, boundingBox.getWidth());
+        Assertions.assertEquals(0, boundingBox.getHeight());
+    }
+
+    @Test
+    void getBoundsInSceneDelegatesToGameNodeIfPresent() {
+        // Arrange
+        var sut = new BoundedImpl();
+        sut.setNode(node);
+
+        // Act
+        sut.getBoundsInScene();
+
+        // Assert
+        Mockito.verify(node).localToScene(any(Bounds.class), eq(true));
+        Mockito.verify(node).getBoundsInLocal();
     }
 
     @Test
@@ -188,7 +215,7 @@ class BoundedTest {
         private Node node;
 
         @Override
-        public Optional<Node> getGameNode() {
+        public Optional<? extends Node> getNode() {
             return Optional.of(node);
         }
 
@@ -197,10 +224,10 @@ class BoundedTest {
         }
     }
 
-    private class EmptyNodeBoundedImpl implements Bounded {
+    private class EmptyGameNodeBoundedImpl implements Bounded {
 
         @Override
-        public Optional<Node> getGameNode() {
+        public Optional<? extends Node> getNode() {
             return Optional.empty();
         }
     }

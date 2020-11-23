@@ -2,8 +2,11 @@ package com.github.hanyaeger.api.engine.entities.entity.collisions;
 
 import com.github.hanyaeger.api.engine.Timer;
 import com.github.hanyaeger.api.engine.entities.entity.AnchorPoint;
-import com.github.hanyaeger.api.engine.entities.entity.Location;
+import com.github.hanyaeger.api.engine.entities.entity.Coordinate2D;
 import com.github.hanyaeger.api.engine.entities.entity.YaegerEntity;
+import com.github.hanyaeger.api.engine.entities.entity.motion.DefaultMotionApplier;
+import com.github.hanyaeger.api.engine.entities.entity.motion.MotionApplier;
+import com.github.hanyaeger.api.guice.factories.MotionApplierFactory;
 import com.google.inject.Injector;
 import javafx.scene.Node;
 import org.junit.jupiter.api.Assertions;
@@ -14,7 +17,6 @@ import org.mockito.Mockito;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import static org.mockito.Mockito.mock;
 
@@ -30,13 +32,13 @@ class CollisionDelegateTest {
     @Test
     void onlyCollidedGetsCollisionCheck() {
         // Arrange
-        AABBCollided collided = mock(AABBCollided.class);
-        Collider collider = mock(Collider.class);
+        var collided = mock(Collided.class);
+        var AABBCollider = mock(Collider.class);
 
         collisionDelegate.register(collided);
-        collisionDelegate.register(collider);
+        collisionDelegate.register(AABBCollider);
 
-        ArgumentCaptor<Set> argument = ArgumentCaptor.forClass(Set.class);
+        ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
 
         // Act
         collisionDelegate.checkCollisions();
@@ -49,27 +51,27 @@ class CollisionDelegateTest {
     @Test
     void entitiesGetCorrectlyAdded() {
         // Arrange
-        YaegerEntity collidedEntity = mock(CollidedTestEntity.class);
-        YaegerEntity colliderEntity = mock(ColliderTestEntity.class);
+        YaegerEntity collidedEntity = mock(CollidedImpl.class);
+        YaegerEntity colliderEntity = mock(ColliderImpl.class);
 
         collisionDelegate.register(collidedEntity);
         collisionDelegate.register(colliderEntity);
 
-        ArgumentCaptor<Set> argument = ArgumentCaptor.forClass(Set.class);
+        ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
 
         // Act
         collisionDelegate.checkCollisions();
 
         // Assert
-        Mockito.verify((AABBCollided) collidedEntity).checkForCollisions(argument.capture());
+        Mockito.verify((Collided) collidedEntity).checkForCollisions(argument.capture());
         Assertions.assertEquals(1, argument.getValue().size());
     }
 
     @Test
     void afterRemoveCollidedNoCollisionsAreChecked() {
         // Arrange
-        YaegerEntity collidedEntity = mock(CollidedTestEntity.class);
-        YaegerEntity colliderEntity = mock(ColliderTestEntity.class);
+        YaegerEntity collidedEntity = mock(CollidedImpl.class);
+        YaegerEntity colliderEntity = mock(ColliderImpl.class);
 
         collisionDelegate.register(collidedEntity);
         collisionDelegate.register(colliderEntity);
@@ -85,31 +87,31 @@ class CollisionDelegateTest {
     @Test
     void afterRemoveColliderNoCollisionsAreReported() {
         // Arrange
-        YaegerEntity collidedEntity = mock(CollidedTestEntity.class);
-        YaegerEntity colliderEntity = mock(ColliderTestEntity.class);
+        YaegerEntity collidedEntity = mock(CollidedImpl.class);
+        YaegerEntity colliderEntity = mock(ColliderImpl.class);
 
         collisionDelegate.register(collidedEntity);
         collisionDelegate.register(colliderEntity);
 
-        ArgumentCaptor<Set> argument = ArgumentCaptor.forClass(Set.class);
+        ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
 
         // Act
         collisionDelegate.remove(colliderEntity);
         collisionDelegate.checkCollisions();
 
         // Assert
-        Mockito.verify((AABBCollided) collidedEntity).checkForCollisions(argument.capture());
+        Mockito.verify((Collided) collidedEntity).checkForCollisions(argument.capture());
         Assertions.assertEquals(0, argument.getValue().size());
     }
 
-    private class CollidedTestEntity extends YaegerEntity implements AABBCollided {
+    private class CollidedImpl extends YaegerEntity implements Collided {
 
         /**
-         * Instantiate a new {@link YaegerEntity} for the given {@link Location} and textDelegate.
+         * Instantiate a new {@link YaegerEntity} for the given {@link Coordinate2D} and textDelegate.
          *
-         * @param initialPosition the initial {@link Location} of this {@link YaegerEntity}
+         * @param initialPosition the initial {@link Coordinate2D} of this {@link YaegerEntity}
          */
-        public CollidedTestEntity(Location initialPosition) {
+        public CollidedImpl(Coordinate2D initialPosition) {
             super(initialPosition);
         }
 
@@ -124,7 +126,7 @@ class CollisionDelegateTest {
         }
 
         @Override
-        public Optional<Node> getGameNode() {
+        public Optional<? extends Node> getNode() {
             return null;
         }
 
@@ -139,17 +141,7 @@ class CollisionDelegateTest {
         }
 
         @Override
-        public void setOriginX(double x) {
-            // Not required here.
-        }
-
-        @Override
-        public void setOriginY(double y) {
-            // Not required here.
-        }
-
-        @Override
-        public void placeOnScene() {
+        public void transferCoordinatesToNode() {
             // Not required here.
         }
 
@@ -180,19 +172,35 @@ class CollisionDelegateTest {
 
         @Override
         public List<Timer> getTimers() {
-            return null;
             // Not required here.
+            return null;
+        }
+
+        @Override
+        public void injectMotionApplierFactory(MotionApplierFactory motionApplierFactory) {
+            // Not required here.
+        }
+
+        @Override
+        public MotionApplier getMotionApplier() {
+            // Not required here.
+            return null;
+        }
+
+        @Override
+        public void undoUpdate() {
+            // Not required here
         }
     }
 
-    private class ColliderTestEntity extends YaegerEntity implements Collider {
+    private class ColliderImpl extends YaegerEntity implements Collider {
 
         /**
-         * Instantiate a new {@link YaegerEntity} for the given {@link Location} and textDelegate.
+         * Instantiate a new {@link YaegerEntity} for the given {@link Coordinate2D} and textDelegate.
          *
-         * @param initialPosition the initial {@link Location} of this {@link YaegerEntity}
+         * @param initialPosition the initial {@link Coordinate2D} of this {@link YaegerEntity}
          */
-        public ColliderTestEntity(Location initialPosition) {
+        public ColliderImpl(Coordinate2D initialPosition) {
             super(initialPosition);
         }
 
@@ -202,7 +210,7 @@ class CollisionDelegateTest {
         }
 
         @Override
-        public Optional<Node> getGameNode() {
+        public Optional<? extends Node> getNode() {
             return null;
         }
 
@@ -217,17 +225,7 @@ class CollisionDelegateTest {
         }
 
         @Override
-        public void setOriginX(double x) {
-            // Not required here.
-        }
-
-        @Override
-        public void setOriginY(double y) {
-            // Not required here.
-        }
-
-        @Override
-        public void placeOnScene() {
+        public void transferCoordinatesToNode() {
             // Not required here.
         }
 

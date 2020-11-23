@@ -1,11 +1,13 @@
-## Changes in this release
+# Changes in this release
 
-### Configuration
+## Configuration
 
-### Refactor
+## Refactor
 
-### Features
+## Features
 
-### Bugfixes
-- Fixed the faulty link in the Maven Central badge
+- Added extra methods for using the `Direction` enumeration directly instead of callen `getValue()` (#135).
 
+## Bugfixes
+
+- It is now possible to first set the direction of an Entity and then its speed (#41).

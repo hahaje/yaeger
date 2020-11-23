@@ -1,25 +1,31 @@
 package com.github.hanyaeger.api.engine.entities.entity.shape.rectangle;
 
 import com.github.hanyaeger.api.engine.Updater;
-import com.github.hanyaeger.api.engine.entities.entity.Location;
+import com.github.hanyaeger.api.engine.entities.EntityCollection;
+import com.github.hanyaeger.api.engine.entities.entity.Coordinate2D;
 import com.github.hanyaeger.api.engine.entities.entity.motion.EntityMotionInitBuffer;
+import com.github.hanyaeger.api.engine.entities.entity.motion.MotionApplier;
+import com.github.hanyaeger.api.engine.entities.entity.motion.MotionApplierType;
+import com.github.hanyaeger.api.guice.factories.MotionApplierFactory;
 import com.google.inject.Injector;
 import javafx.scene.shape.Rectangle;
 import com.github.hanyaeger.api.engine.entities.entity.motion.DefaultMotionApplier;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 class DynamicRectangleEntityTest {
 
+    private final long TIMESTAMP = 0L;
+
     private final static int X_POSITION = 37;
     private final static int Y_POSITION = 37;
-    private final static Location DEFAULT_LOCATION = new Location(X_POSITION, Y_POSITION);
+    private final static Coordinate2D DEFAULT_LOCATION = new Coordinate2D(X_POSITION, Y_POSITION);
     public static final int ROTATION_SPEED = 37;
     public static final double SPEED = 37d;
     public static final double DIRECTION = 42d;
@@ -32,7 +38,7 @@ class DynamicRectangleEntityTest {
     void setup() {
         sut = new DynamicRectangleEntityImpl(DEFAULT_LOCATION);
         rectangle = mock(Rectangle.class);
-        sut.setRectangle(rectangle);
+        sut.setShape(rectangle);
         injector = mock(Injector.class);
     }
 
@@ -47,58 +53,68 @@ class DynamicRectangleEntityTest {
         Assertions.assertTrue(buffer.isPresent());
     }
 
-    @Test
-    void bufferIsEmptiedAfterInitIsCalled() {
-        // Arrange
-        var motionApplier = mock(DefaultMotionApplier.class);
-        sut.setMotionApplier(motionApplier);
+    @Nested
+    class WithMotionApplierSet {
 
-        // Act
-        sut.init(injector);
+        private MotionApplierFactory motionApplierFactory;
+        private MotionApplier motionApplier;
 
-        // Assert
-        Assertions.assertFalse(sut.getBuffer().isPresent());
-    }
+        @BeforeEach
+        void setup() {
+            motionApplierFactory = mock(MotionApplierFactory.class);
+            motionApplier = mock(MotionApplier.class);
+            when(motionApplierFactory.create(MotionApplierType.DEFAULT)).thenReturn(motionApplier);
+        }
 
-    @Test
-    void bufferTransfersMotionOnInit(){
-        // Arrange
-        var motionApplier = mock(DefaultMotionApplier.class);
-        sut.setMotionApplier(motionApplier);
-        sut.setMotionTo(SPEED, DIRECTION);
+        @Test
+        void bufferIsEmptiedAfterInitIsCalled() {
+            // Arrange
+            sut.injectMotionApplierFactory(motionApplierFactory);
 
-        // Act
-        sut.init(injector);
+            // Act
+            sut.init(injector);
 
-        // Assert
-        verify(motionApplier).setMotionTo(SPEED, DIRECTION);
-    }
+            // Assert
+            Assertions.assertFalse(sut.getBuffer().isPresent());
+        }
 
-    @Test
-    void initSetsMotionToDesiredSpeed() {
-        // Arrange
-        sut.setSpeedTo(SPEED);
-        var motionApplier = mock(DefaultMotionApplier.class);
-        sut.setMotionApplier(motionApplier);
+        @Test
+        void bufferTransfersMotionOnInit() {
+            // Arrange
+            sut.setMotion(SPEED, DIRECTION);
+            sut.injectMotionApplierFactory(motionApplierFactory);
 
-        // Act
-        sut.init(injector);
+            // Act
+            sut.init(injector);
 
-        // Assert
-        verify(motionApplier).setMotionTo(SPEED, 0d);
-    }
+            // Assert
+            verify(motionApplier).setMotion(SPEED, DIRECTION);
+        }
 
-    @Test
-    void setMotionApplierIsUsed() {
-        // Arrange
-        var motionApplier = mock(DefaultMotionApplier.class);
-        sut.setMotionApplier(motionApplier);
+        @Test
+        void initSetsMotionToDesiredSpeed() {
+            // Arrange
+            sut.setSpeed(SPEED);
+            sut.injectMotionApplierFactory(motionApplierFactory);
 
-        // Act
-        var mA = sut.getMotionApplier();
+            // Act
+            sut.init(injector);
 
-        // Assert
-        Assertions.assertEquals(motionApplier, mA);
+            // Assert
+            verify(motionApplier).setMotion(SPEED, 0d);
+        }
+
+        @Test
+        void setMotionApplierIsUsed() {
+            // Arrange
+            sut.injectMotionApplierFactory(motionApplierFactory);
+
+            // Act
+            var mA = sut.getMotionApplier();
+
+            // Assert
+            Assertions.assertEquals(motionApplier, mA);
+        }
     }
 
     @Test
@@ -126,6 +142,30 @@ class DynamicRectangleEntityTest {
         Assertions.assertEquals(ROTATION_SPEED, rS);
     }
 
+    @Test
+    void addToEntityCollectionCallsAddDynamicEntity() {
+        // Arrange
+        var entityCollection = mock(EntityCollection.class);
+
+        // Act
+        sut.addToEntityCollection(entityCollection);
+
+        // Assert
+        verify(entityCollection).addDynamicEntity(sut);
+    }
+
+    @Test
+    void updateGetsDelegated() {
+        // Arrange
+        var updater = mock(Updater.class);
+        sut.setUpdater(updater);
+
+        // Act
+        sut.update(TIMESTAMP);
+
+        // Assert
+        verify(updater).update(TIMESTAMP);
+    }
 
     private class DynamicRectangleEntityImpl extends DynamicRectangleEntity {
 
@@ -134,7 +174,7 @@ class DynamicRectangleEntityTest {
          *
          * @param initialPosition The initial position at which this {@link DynamicRectangleEntity} should be placed
          */
-        public DynamicRectangleEntityImpl(Location initialPosition) {
+        public DynamicRectangleEntityImpl(Coordinate2D initialPosition) {
             super(initialPosition);
         }
     }

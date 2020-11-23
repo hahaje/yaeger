@@ -2,6 +2,8 @@ package com.github.hanyaeger.api.engine.entities.entity.motion;
 
 import com.github.hanyaeger.api.engine.Updatable;
 import com.github.hanyaeger.api.engine.entities.entity.AnchorPoint;
+import com.github.hanyaeger.api.engine.entities.entity.Coordinate2D;
+import com.github.hanyaeger.api.guice.factories.MotionApplierFactory;
 import javafx.geometry.BoundingBox;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
@@ -13,24 +15,42 @@ import org.mockito.Mockito;
 
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class MoveableTest {
 
+    private MotionApplierFactory motionApplierFactory;
     private DefaultMotionApplier motionApplier;
     private Moveable sut;
 
     private static final double DELTA = 0.00001d;
     private static final long TIMESTAMP = 0;
     private static final double SPEED = 3.7;
+    private static final Direction DIRECTION_ENUM = Direction.RIGHT;
     private static final double DIRECTION = 42;
 
     @BeforeEach
     void setup() {
-        motionApplier = Mockito.mock(DefaultMotionApplier.class);
+        motionApplierFactory = mock(MotionApplierFactory.class);
+        motionApplier = mock(DefaultMotionApplier.class);
+
+        when(motionApplierFactory.create(any(MotionApplierType.class))).thenReturn(motionApplier);
+
         sut = new MoveableImpl();
-        sut.setMotionApplier(motionApplier);
+        sut.injectMotionApplierFactory(motionApplierFactory);
+    }
+
+    @Test
+    void getMotionModifierTypeReturnsDefault(){
+        // Arrange
+
+        // Act
+        var actual = sut.getMotionModifierType();
+
+        // Assert
+        Assertions.assertEquals(MotionApplierType.DEFAULT, actual);
     }
 
     @Test
@@ -38,10 +58,21 @@ class MoveableTest {
         // Arrange
 
         // Act
-        sut.setMotionTo(SPEED, DIRECTION);
+        sut.setMotion(SPEED, DIRECTION);
 
         // Assert
-        verify(motionApplier).setMotionTo(SPEED, DIRECTION);
+        verify(motionApplier).setMotion(SPEED, DIRECTION);
+    }
+
+    @Test
+    void setMotionWithEnumDelegatesToMotionApplier() {
+        // Arrange
+
+        // Act
+        sut.setMotion(SPEED, DIRECTION_ENUM);
+
+        // Assert
+        verify(motionApplier).setMotion(SPEED, DIRECTION_ENUM.getValue());
     }
 
     @Test
@@ -49,10 +80,10 @@ class MoveableTest {
         // Arrange
 
         // Act
-        sut.multiplySpeedWith(SPEED);
+        sut.multiplySpeed(SPEED);
 
         // Assert
-        verify(motionApplier).multiplySpeedWith(SPEED);
+        verify(motionApplier).multiplySpeed(SPEED);
     }
 
     @Test
@@ -60,10 +91,10 @@ class MoveableTest {
         // Arrange
 
         // Act
-        sut.setSpeedTo(SPEED);
+        sut.setSpeed(SPEED);
 
         // Assert
-        verify(motionApplier).setSpeedTo(SPEED);
+        verify(motionApplier).setSpeed(SPEED);
     }
 
     @Test
@@ -75,7 +106,7 @@ class MoveableTest {
         double speed = sut.getSpeed();
 
         // Assert
-        Assertions.assertEquals(SPEED, speed, DELTA);
+        assertEquals(SPEED, speed, DELTA);
     }
 
     @Test
@@ -83,10 +114,21 @@ class MoveableTest {
         // Arrange
 
         // Act
-        sut.setDirectionTo(DIRECTION);
+        sut.setDirection(DIRECTION);
 
         // Assert
-        verify(motionApplier).setDirectionTo(DIRECTION);
+        verify(motionApplier).setDirection(DIRECTION);
+    }
+
+    @Test
+    void setDirectionEnumDelegatesToMotionApplier() {
+        // Arrange
+
+        // Act
+        sut.setDirection(DIRECTION_ENUM);
+
+        // Assert
+        verify(motionApplier).setDirection(DIRECTION_ENUM.getValue());
     }
 
     @Test
@@ -94,10 +136,10 @@ class MoveableTest {
         // Arrange
 
         // Act
-        sut.alterSpeedBy(SPEED);
+        sut.incrementSpeed(SPEED);
 
         // Assert
-        verify(motionApplier).alterSpeedBy(SPEED);
+        verify(motionApplier).incrementSpeed(SPEED);
     }
 
     @Test
@@ -105,10 +147,10 @@ class MoveableTest {
         // Arrange
 
         // Act
-        sut.changeDirectionBy(DIRECTION);
+        sut.changeDirection(DIRECTION);
 
         // Assert
-        verify(motionApplier).changeDirectionBy(DIRECTION);
+        verify(motionApplier).changeDirection(DIRECTION);
     }
 
     @Test
@@ -120,7 +162,7 @@ class MoveableTest {
         double direction = sut.getDirection();
 
         // Assert
-        Assertions.assertEquals(DIRECTION, direction, DELTA);
+        assertEquals(DIRECTION, direction, DELTA);
     }
 
     @Test
@@ -131,26 +173,37 @@ class MoveableTest {
         Updatable updatable = sut.updateLocation();
 
         // Assert
-        Assertions.assertNotNull(updatable);
+        assertNotNull(updatable);
     }
 
     @Test
-    void callingTheUpdatableModifiesPosition() {
+    void callingTheUpdatableSetsHaltedToFalse() {
         // Arrange
-        var UPDATED_LOCATION = new Point2D(37, 42);
+        var anchorLocation = new Coordinate2D(37, 42);
+        sut.setAnchorLocation(anchorLocation);
         Updatable updatable = sut.updateLocation();
-        Node node = mock(Node.class, withSettings().withoutAnnotations());
-        Bounds bounds = new BoundingBox(0, 0, 10, 10);
-        when(node.getBoundsInLocal()).thenReturn(bounds);
-        when(motionApplier.updateLocation(any(Point2D.class))).thenReturn(UPDATED_LOCATION);
         when(motionApplier.getSpeed()).thenReturn(1d);
 
-        ((MoveableImpl) sut).setGameNode(node);
         // Act
         updatable.update(TIMESTAMP);
 
         // Assert
-        verify(motionApplier).updateLocation(any(Point2D.class));
+        verify(motionApplier).setHalted(false);
+    }
+
+    @Test
+    void callingTheUpdatableModifiesLocation() {
+        // Arrange
+        var anchorLocation = new Coordinate2D(37, 42);
+        sut.setAnchorLocation(anchorLocation);
+        Updatable updatable = sut.updateLocation();
+        when(motionApplier.getSpeed()).thenReturn(1d);
+
+        // Act
+        updatable.update(TIMESTAMP);
+
+        // Assert
+        verify(motionApplier).updateLocation(any(Coordinate2D.class));
     }
 
     @Test
@@ -171,14 +224,73 @@ class MoveableTest {
         verify(motionApplier, never()).updateLocation(any(Point2D.class));
     }
 
+    @Test
+    void callingUndoUpdateForNonHaltedMotionDoesNotChangeLocation() {
+        // Arrange
+        when(motionApplier.isHalted()).thenReturn(false);
+        sut.setAnchorLocation(null);
+
+        // Act
+        sut.undoUpdate();
+
+        // Assert
+        assertNull(sut.getAnchorLocation());
+    }
+
+    @Test
+    void callingUndoUpdateForHaltedMotionAndSpeedNotZeroDoesNotChangeLocation() {
+        // Arrange
+        when(motionApplier.isHalted()).thenReturn(true);
+        when(motionApplier.getSpeed()).thenReturn(1d);
+        sut.setAnchorLocation(null);
+
+        // Act
+        sut.undoUpdate();
+
+        // Assert
+        assertNull(sut.getAnchorLocation());
+    }
+
+    @Test
+    void callingUndoUpdateForHaltedMotionAndSpeedZeroAndNoPreviousLocationDoesNotChangeLocation() {
+        // Arrange
+        when(motionApplier.isHalted()).thenReturn(true);
+        when(motionApplier.getSpeed()).thenReturn(0d);
+        when(motionApplier.getPreviousLocation()).thenReturn(Optional.empty());
+        sut.setAnchorLocation(null);
+
+        // Act
+        sut.undoUpdate();
+
+        // Assert
+        assertNull(sut.getAnchorLocation());
+    }
+
+    @Test
+    void callingUndoChangesLocation() {
+        // Arrange
+        var expected = new Coordinate2D(3, 4);
+        when(motionApplier.isHalted()).thenReturn(true);
+        when(motionApplier.getSpeed()).thenReturn(0d);
+        when(motionApplier.getPreviousLocation()).thenReturn(Optional.of(expected));
+        sut.setAnchorLocation(null);
+
+        // Act
+        sut.undoUpdate();
+
+        // Assert
+        assertEquals(expected, sut.getAnchorLocation());
+    }
+
     private class MoveableImpl implements Moveable {
 
-        DefaultMotionApplier motionApplier;
+        Coordinate2D anchorLocation;
+        MotionApplier motionApplier;
         Node node;
 
         @Override
-        public void setMotionApplier(DefaultMotionApplier motionApplier) {
-            this.motionApplier = motionApplier;
+        public void injectMotionApplierFactory(MotionApplierFactory motionApplierFactory) {
+            this.motionApplier = motionApplierFactory.create(MotionApplierType.DEFAULT);
         }
 
         @Override
@@ -187,7 +299,7 @@ class MoveableTest {
         }
 
         @Override
-        public Optional<Node> getGameNode() {
+        public Optional<? extends Node> getNode() {
             return Optional.of(node);
         }
 
@@ -206,18 +318,28 @@ class MoveableTest {
         }
 
         @Override
-        public void setOriginX(double x) {
+        public void setAnchorLocationX(double x) {
             // Not required here.
         }
 
         @Override
-        public void setOriginY(double y) {
+        public void setAnchorLocationY(double y) {
             // Not required here.
         }
 
         @Override
-        public void placeOnScene() {
+        public void setAnchorLocation(Coordinate2D anchorLocation) {
+            this.anchorLocation = anchorLocation;
+        }
 
+        @Override
+        public Coordinate2D getAnchorLocation() {
+            return anchorLocation;
+        }
+
+        @Override
+        public void transferCoordinatesToNode() {
+            // Not required here.
         }
     }
 }

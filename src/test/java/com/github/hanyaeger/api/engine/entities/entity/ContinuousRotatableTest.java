@@ -1,5 +1,6 @@
 package com.github.hanyaeger.api.engine.entities.entity;
 
+import com.github.hanyaeger.api.engine.entities.entity.motion.RotationBuffer;
 import javafx.scene.Node;
 import org.junit.jupiter.api.Test;
 
@@ -14,18 +15,18 @@ class ContinuousRotatableTest {
     @Test
     void setRotationAngleIsUsedForRotationIncrement() {
         // Arrange
-        var rotatable = new ContinuousRotatableImpl();
+        var sut = new ContinuousRotatableImpl();
         var node = mock(Node.class, withSettings().withoutAnnotations());
-        rotatable.setNode(node);
-        rotatable.setRotationSpeed(ROTATION_ANGLE);
+        sut.setNode(node);
+        sut.setRotationSpeed(ROTATION_ANGLE);
         when(node.getRotate()).thenReturn(0d);
 
         // Act
-        var updatable = rotatable.applyRotation();
+        var updatable = sut.applyRotation();
         updatable.update(1L);
 
         // Assert
-        verify(node).setRotate(37d);
+        verify(node).setRotate(-37d);
     }
 
     private class ContinuousRotatableImpl implements ContinuousRotatable {
@@ -40,7 +41,7 @@ class ContinuousRotatableTest {
         private Node node;
 
         @Override
-        public Optional<Node> getGameNode() {
+        public Optional<? extends Node> getNode() {
             return Optional.of(node);
         }
 
@@ -51,6 +52,11 @@ class ContinuousRotatableTest {
         @Override
         public void setRotationSpeed(double rotationAngle) {
             this.rotationAngle = rotationAngle;
+        }
+
+        @Override
+        public RotationBuffer getRotationBuffer() {
+            return null;
         }
     }
 }

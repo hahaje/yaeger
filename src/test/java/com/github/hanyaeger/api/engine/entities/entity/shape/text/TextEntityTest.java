@@ -1,71 +1,121 @@
 package com.github.hanyaeger.api.engine.entities.entity.shape.text;
 
-import com.github.hanyaeger.api.engine.entities.entity.Location;
+import com.github.hanyaeger.api.engine.entities.entity.Coordinate2D;
 import com.google.inject.Injector;
-import javafx.geometry.Point2D;
 import javafx.geometry.VPos;
-import javafx.scene.Node;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 class TextEntityTest {
 
     private static final String YAEGER = "Yaeger";
-    private static final Location LOCATION = new Location(37, 37);
+    private static final Coordinate2D LOCATION = new Coordinate2D(37, 37);
     private static final Font FONT = Font.font("palatino", FontWeight.BOLD, 240);
     private static final Color COLOR = Color.DARKBLUE;
     private Text text;
     private Injector injector;
+    private TextEntity sut;
 
     @BeforeEach
     void setup() {
         text = mock(Text.class);
         injector = mock(Injector.class);
+        sut = new TextEntity(LOCATION);
     }
 
     @Test
-    void getNodeReturnsEmptyNodeIfTextNotSet() {
+    void setAnchorLocationSetsAnchorLocationOnNode() {
         // Arrange
-        var sut = new TextEntityImpl(new Location(0, 0));
+        sut.setShape(text);
+        var expected = new Coordinate2D(1.1, 2.2);
 
         // Act
-        Optional<Node> gameNode = sut.getGameNode();
+        sut.setAnchorLocation(expected);
 
         // Assert
-        Assertions.assertTrue(gameNode.isEmpty());
+        verify(text).setX(expected.getX());
+        verify(text).setY(expected.getY());
     }
 
     @Test
-    void settingPositionWithoutDelegateStoresPositionAsInitialPosition() {
-        // Setup
-        var sut = new TextEntityImpl(new Location(0, 0));
+    void getFontWithoutNodeOrBufferedFontReturnsDefault() {
+        // Arrange
 
-        // Test
-        sut.setOriginX(LOCATION.getX());
-        sut.setOriginY(LOCATION.getY());
+        // Act
+        var actual = sut.getFont();
 
         // Assert
-        Assertions.assertEquals(0, Double.compare(sut.getInitialLocation().getX(), LOCATION.getX()));
-        Assertions.assertEquals(0, Double.compare(sut.getInitialLocation().getY(), LOCATION.getY()));
+        assertEquals(TextEntity.DEFAULT_FONT, actual);
+    }
+
+    @Test
+    void getFontBeforeNodeIsSetUsesBufferedFont() {
+        // Arrange
+        sut.setFont(FONT);
+
+        // Act
+        var actual = sut.getFont();
+
+        // Assert
+        assertEquals(FONT, actual);
+    }
+
+    @Test
+    void getFontAfterNodeIsSetDelegatesTheFont() {
+        // Arrange
+        sut.setShape(text);
+        sut.init(injector);
+
+        when(text.getFont()).thenReturn(FONT);
+
+        // Act
+        var actual = sut.getFont();
+
+        // Assert
+        assertEquals(FONT, actual);
+    }
+
+    @Test
+    void getTextBeforeNodeIsSetUsesBufferedText() {
+        // Arrange
+        sut.setText(YAEGER);
+
+        // Act
+        var actual = sut.getText();
+
+        // Assert
+        assertEquals(YAEGER, actual);
+    }
+
+    @Test
+    void getTextAfterNodeIsSetDelegatesTheText() {
+        // Arrange
+        sut.setShape(text);
+        sut.init(injector);
+
+        when(text.getText()).thenReturn(YAEGER);
+
+        // Act
+        var actual = sut.getText();
+
+        // Assert
+        assertEquals(YAEGER, actual);
     }
 
     @Test
     void settingDelegateSetsTextOnDelegate() {
         // Setup
-        var sut = new TextEntity(LOCATION);
 
         // Test
         sut.setText(YAEGER);
-        sut.setTextDelegate(text);
+        sut.setShape(text);
         sut.init(injector);
 
         // Assert
@@ -74,27 +124,12 @@ class TextEntityTest {
     }
 
     @Test
-    void settingDelegateSetsFillOnDelegate() {
-        // Setup
-        var sut = new TextEntity(LOCATION);
-
-        // Test
-        sut.setFill(COLOR);
-        sut.setTextDelegate(text);
-        sut.init(injector);
-
-        // Assert
-        verify(text).setFill(COLOR);
-    }
-
-    @Test
     void settingDelegateSetsFontOnDelegate() {
         // Setup
-        var sut = new TextEntity(LOCATION);
 
         // Test
         sut.setFont(FONT);
-        sut.setTextDelegate(text);
+        sut.setShape(text);
         sut.init(injector);
 
         // Assert
@@ -107,59 +142,25 @@ class TextEntityTest {
         var sut = new TextEntity(LOCATION, YAEGER);
 
         // Test
-        sut.setTextDelegate(text);
+        sut.setShape(text);
         sut.init(injector);
 
         // Assert
         verify(text).setText(YAEGER);
-    }
-
-    @Test
-    void getGameNodeReturnsTheTextDelegate() {
-        // Setup
-        var sut = new TextEntity(LOCATION, YAEGER);
-
-        // Test
-        sut.setTextDelegate(text);
-        sut.init(injector);
-
-        // Assert
-        Assertions.assertEquals(text, sut.getGameNode().get());
     }
 
     @Test
     void settingValuesAfterDelegateIsSetDelegatesTheValues() {
         // Setup
-        var sut = new TextEntity(LOCATION);
-        sut.setTextDelegate(text);
+        sut.setShape(text);
         sut.init(injector);
 
         // Test
         sut.setText(YAEGER);
-        sut.setVisible(false);
         sut.setFont(FONT);
-        sut.setFill(COLOR);
 
         // Assert
-        verify(text).setVisible(false);
-        verify(text).setFill(COLOR);
         verify(text).setText(YAEGER);
         verify(text).setFont(FONT);
-    }
-
-    private class TextEntityImpl extends TextEntity {
-
-        /**
-         * Create a new {@link TextEntityImpl} on the given {@code initialPosition}.
-         *
-         * @param initialPosition The initial position at which this {@link TextEntityImpl} should be placed
-         */
-        public TextEntityImpl(Location initialPosition) {
-            super(initialPosition);
-        }
-
-        public Point2D getInitialLocation() {
-            return new Point2D(initialX, initialY);
-        }
     }
 }

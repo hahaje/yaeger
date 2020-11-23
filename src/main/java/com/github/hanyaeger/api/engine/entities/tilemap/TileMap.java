@@ -7,7 +7,7 @@ import com.github.hanyaeger.api.engine.Size;
 import com.github.hanyaeger.api.engine.entities.EntitySupplier;
 import com.github.hanyaeger.api.engine.entities.entity.AnchorPoint;
 import com.github.hanyaeger.api.engine.entities.entity.Anchorable;
-import com.github.hanyaeger.api.engine.entities.entity.Location;
+import com.github.hanyaeger.api.engine.entities.entity.Coordinate2D;
 import com.github.hanyaeger.api.engine.entities.entity.YaegerEntity;
 import com.github.hanyaeger.api.engine.exceptions.EntityNotAvailableException;
 import com.github.hanyaeger.api.engine.exceptions.YaegerEngineException;
@@ -26,29 +26,29 @@ import java.util.*;
  */
 public abstract class TileMap extends EntitySupplier implements Anchorable, Activatable {
 
-    private Map<Integer, Class<? extends SpriteEntity>> entities = new HashMap<>();
+    private final Map<Integer, Class<? extends SpriteEntity>> entities = new HashMap<>();
 
     private int[][] map;
     private transient TileFactory tileFactory;
     protected transient Optional<Size> size = Optional.empty();
-    protected final transient Optional<Location> location;
+    protected final transient Optional<Coordinate2D> location;
     private transient AnchorPoint anchorPoint = AnchorPoint.TOP_LEFT;
 
     /**
      * Create a new {@link TileMap} that takes up the full width and height of the
      * {@link YaegerScene}.
      */
-    public TileMap() {
-        this(new Location(0, 0), null);
+    protected TileMap() {
+        this(new Coordinate2D(0, 0), null);
     }
 
     /**
      * Create a new {@link TileMap} with the given width and height, placed on the given x and y.
      *
-     * @param location The {@link Location} of the top-left corner of the {@link TileMap}.
+     * @param location The {@link Coordinate2D} of the top-left corner of the {@link TileMap}.
      * @param size     The {@link Size} of the {@link TileMap}.
      */
-    public TileMap(final Location location, final Size size) {
+    protected TileMap(final Coordinate2D location, final Size size) {
         this.location = Optional.of(location);
         if (size != null) {
             this.size = Optional.of(size);
@@ -110,7 +110,7 @@ public abstract class TileMap extends EntitySupplier implements Anchorable, Acti
             x = topLeftLocation.getX();
             y = topLeftLocation.getY();
         } else {
-            throw new YaegerEngineException("No Size or Location is set for this EntityMap. Has setDimensionProvider been called?");
+            throw new YaegerEngineException("No Size or Location is set for this TileMap. Has setDimensionProvider been called?");
         }
 
         for (int i = 0; i < map.length; i++) {
@@ -124,12 +124,12 @@ public abstract class TileMap extends EntitySupplier implements Anchorable, Acti
                     var entityClass = entities.get(key);
 
                     if (entityClass == null) {
-                        throw new EntityNotAvailableException("An Entity with key \"" + key + "\" has not been added to the EntityMap.");
+                        throw new EntityNotAvailableException("An Entity with key \"" + key + "\" has not been added to the TileMap.");
                     }
 
                     var entity = tileFactory.create(entityClass,
-                            new Location(x + (j * entityWidth), y + entityY),
-                            new Size(entityWidth, entityHeight));
+                            new Coordinate2D(Math.round(x + (j * entityWidth)), Math.round(y + entityY)),
+                            new Size(Math.ceil(entityWidth), Math.ceil(entityHeight)));
 
                     add(entity);
                 }
@@ -137,27 +137,18 @@ public abstract class TileMap extends EntitySupplier implements Anchorable, Acti
         }
     }
 
-    private Location getTopLeftLocation(Location location, Size size) {
-        switch (anchorPoint) {
-            case TOP_CENTER:
-                return new Location(location.getX() - (size.getWidth() / 2), location.getY());
-            case TOP_RIGHT:
-                return new Location(location.getX() - size.getWidth(), location.getY());
-            case CENTER_LEFT:
-                return new Location(location.getX(), location.getY() - (size.getHeight() / 2));
-            case CENTER_CENTER:
-                return new Location(location.getX() - (size.getWidth() / 2), location.getY() - (size.getHeight() / 2));
-            case CENTER_RIGHT:
-                return new Location(location.getX() - (size.getWidth()), location.getY() - (size.getHeight() / 2));
-            case BOTTOM_LEFT:
-                return new Location(location.getX(), location.getY() - size.getHeight());
-            case BOTTOM_CENTER:
-                return new Location(location.getX() - (size.getWidth() / 2), location.getY() - (size.getHeight()));
-            case BOTTOM_RIGHT:
-                return new Location(location.getX() - size.getWidth(), location.getY() - size.getHeight());
-            default:
-                return location;
-        }
+    private Coordinate2D getTopLeftLocation(Coordinate2D location, Size size) {
+        return switch (anchorPoint) {
+            case TOP_CENTER -> new Coordinate2D(location.getX() - (size.getWidth() / 2), location.getY());
+            case TOP_RIGHT -> new Coordinate2D(location.getX() - size.getWidth(), location.getY());
+            case CENTER_LEFT -> new Coordinate2D(location.getX(), location.getY() - (size.getHeight() / 2));
+            case CENTER_CENTER -> new Coordinate2D(location.getX() - (size.getWidth() / 2), location.getY() - (size.getHeight() / 2));
+            case CENTER_RIGHT -> new Coordinate2D(location.getX() - (size.getWidth()), location.getY() - (size.getHeight() / 2));
+            case BOTTOM_LEFT -> new Coordinate2D(location.getX(), location.getY() - size.getHeight());
+            case BOTTOM_CENTER -> new Coordinate2D(location.getX() - (size.getWidth() / 2), location.getY() - (size.getHeight()));
+            case BOTTOM_RIGHT -> new Coordinate2D(location.getX() - size.getWidth(), location.getY() - size.getHeight());
+            default -> location;
+        };
     }
 
     @Override
@@ -176,7 +167,7 @@ public abstract class TileMap extends EntitySupplier implements Anchorable, Acti
      *                           {@link DimensionsProvider#getHeight()} method; most likely an {@link YaegerScene}.
      */
     void setDimensionsProvider(final DimensionsProvider dimensionsProvider) {
-        if (!size.isPresent()) {
+        if (size.isEmpty()) {
             size = Optional.of(new Size(dimensionsProvider.getWidth(), dimensionsProvider.getHeight()));
         }
     }
